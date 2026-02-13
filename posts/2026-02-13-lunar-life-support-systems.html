@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunar Habitat Life Support Systems — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  /* ── Post-specific styles ── */
+  .executive-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .company-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .company-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: var(--accent);
+  }
+
+  .company-role {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 1rem;
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  .supply-chain-tier {
+    margin: 2rem 0;
+  }
+
+  .supply-chain-tier h4 {
+    font-size: 0.8rem;
+    color: var(--cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .metric-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .metric-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+  }
+
+  .metric-value {
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: #eeeef4;
+  }
+
+  .source-note {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  ul.compact {
+    margin: 0.5rem 0;
+    padding-left: 1.25rem;
+  }
+
+  ul.compact li {
+    margin-bottom: 0.4rem;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>Lunar Habitat Life Support Systems</h1>
+  <p class="meta">Atmospheric Control & CO₂ Scrubbing · February 2026</p>
+
+  <div class="executive-summary">
+    <strong>Executive Summary</strong>
+    <p style="margin: 0.75rem 0 0 0">The race to establish permanent human presence on the Moon is driving a generational shift in Environmental Control and Life Support Systems (ECLSS). While the ISS has served as the proving ground for current-generation CO₂ removal technology — primarily zeolite-based adsorption systems like the CDRA — the demands of lunar surface habitats are fundamentally different: higher crew counts, longer durations, no easy resupply, the need for gravity-compatible systems, and extreme thermal environments.</p>
+  </div>
+
+  <div class="section-header">Current State: ISS Heritage Systems</div>
+  
+  <h3>Carbon Dioxide Removal Assembly (CDRA)</h3>
+  <p>The CDRA, built by Honeywell Aerospace, has been the primary CO₂ removal system for the U.S. segment of the ISS since February 2001. It operates as a dual-bed, zeolite-based temperature-swing adsorption (TSA) system. Two sets of desiccant/adsorbent bed pairs alternate between adsorbing CO₂ from cabin air and desorbing it into space vacuum. The system supports a crew of up to six at approximately 0.4% CO₂ concentration.</p>
+
+  <p>The CDRA has suffered from persistent reliability issues — most notably zeolite pellet dust contaminating downstream components, degraded seals, and filter clogging — making it a high-maintenance system requiring regular crew intervention. ACE Clearwater Enterprises has manufactured replacement inner chambers, end caps, and specialized filters for the CDRA in partnership with Honeywell and NASA.</p>
+
+  <h3>The 4-Bed CO₂ Scrubber (4BCO₂)</h3>
+  <p>The 4BCO₂ is NASA Marshall Space Flight Center's evolution of the CDRA, developed with collaboration from NASA Johnson. It incorporates lessons from CDRA's failure modes: cylindrical beds replace rectangular ones, redesigned heater cores eliminate void spaces, new dust filters capture sorbent particles, and improved valves extend operating lifetimes. The sorbent selection process evaluated BASF 13X and Grace MS544 C 13X zeolites, both proven robust under humid and dry conditions. The goal is continuous, failure-free operation for nearly 20,000 hours.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Top Companies Working on Next-Generation Systems</div>
+
+  <div class="company-card">
+    <h3>Honeywell Aerospace</h3>
+    <div class="company-role">Industry leader and legacy provider of ISS CDRA systems; developer of next-generation CDRILS technology</div>
+    <p>Honeywell is developing the <strong>Carbon Dioxide Removal by Ionic Liquid Sorbent (CDRILS)</strong> system, which represents a paradigm shift from solid sorbent to liquid absorbent CO₂ removal. CDRILS uses an ionic liquid mixture containing 1-ethyl-3-methylimidazolium acetate (EMIM[Ac]) with hollow fiber membrane contactors for continuous CO₂ absorption and desorption. A flight demonstration on the ISS is targeted for 2028.</p>
+    
+    <p><strong>Key advantages over CDRA:</strong></p>
+    <ul class="compact">
+      <li>Continuous flow processing (no batch cycling between beds)</li>
+      <li>Can maintain CO₂ partial pressure below 2 mmHg — half that of CDRA</li>
+      <li>Eliminates the need for a CO₂ compressor and accumulator (saving 291.1 kg of equivalent system mass)</li>
+      <li>Can also handle humidity control and significant trace contaminant removal</li>
+      <li>Lower volume, mass, power, and cooling requirements</li>
+    </ul>
+  </div>
+
+  <div class="company-card">
+    <h3>Paragon Space Development Corporation</h3>
+    <div class="company-role">ECLSS designer for NASA Lunar Gateway HALO module; specialist in life support, thermal control, and ISRU</div>
+    <p>Paragon is responsible for the design and implementation of the HALO (Habitation and Logistics Outpost) ECLSS for the Lunar Gateway, under a ~$100M subcontract from Northrop Grumman (awarded May 2021). The HALO ECLSS maintains safe levels of oxygen, CO₂, humidity, and trace contaminants for visiting crew during stays of up to 90 days.</p>
+    
+    <p><strong>Key technologies:</strong></p>
+    <ul class="compact">
+      <li><strong>Ionomer-membrane Water Processing (IWP)</strong> — used on Boeing's CST-100 Starliner for humidity control with no moving parts</li>
+      <li><strong>Brine Processor Assembly (BPA)</strong> — launched to ISS in February 2021, increasing water loop closure from 93% to over 98%</li>
+      <li><strong>Primary Urine Processor (PUP)</strong> — designed to replace two ISS systems with one compact unit</li>
+      <li><strong>Atmospheric Monitoring System (AMS)</strong> — detects harmful gases with integrated microgravity smoke detection</li>
+    </ul>
+  </div>
+
+  <div class="company-card">
+    <h3>Collins Aerospace (RTX Corporation)</h3>
+    <div class="company-role">ECLSS provider for commercial orbital habitats; legacy Apollo and ISS spacesuit life support</div>
+    <p>Collins Aerospace was awarded a $2.6M contract in 2021 for ECLSS supporting a privately owned orbital outpost in LEO. Their offering includes air revitalization and pressure control (cabin fans, heat exchangers, CO₂ removal, trace contaminant control, valves, regulators, smoke detection) and active thermal control. Collins also provides the Sabatier CO₂ reduction system currently operational on the ISS.</p>
+  </div>
+
+  <div class="company-card">
+    <h3>Precision Combustion, Inc. (PCI)</h3>
+    <div class="company-role">Sabatier reactor specialist; catalytic systems for CO₂ conversion</div>
+    <p>PCI has developed a compact 4-crew Sabatier reactor that integrates directly with Honeywell's CDRILS system, converting captured CO₂ and hydrogen into water and methane. The reactor's waste heat is repurposed to heat the ionic liquid in the CDRILS system, saving approximately 72.5–145 W. PCI is a key member of the Honeywell-led Commercial ECLSS team.</p>
+  </div>
+
+  <div class="company-card">
+    <h3>Thales Alenia Space</h3>
+    <div class="company-role">Prime contractor for ESA's Lunar I-Hab module and Italy's Lunar Multi-Purpose Habitat</div>
+    <p>Thales Alenia Space in Turin is building the primary structure for the Lunar I-Hab module (launching on Artemis IV circa 2028), with JAXA providing the ECLSS, batteries, and thermal control. The I-Hab provides approximately 10 m³ of habitable volume for up to four astronauts for 30–90 day stays.</p>
+  </div>
+
+  <div class="company-card">
+    <h3>Airbus Defence and Space</h3>
+    <div class="company-role">ECLSS design for Starlab commercial space station; ISS Columbus module heritage</div>
+    <p>Airbus is providing technical design and engineering for the Starlab station's ECLSS, which leverages over 30 years of NASA and ESA investment in life support and thermal control. The station targets a loop closure greater than 90%, with a continuous crew of four (up to eight temporarily) in a 450 m³ pressurized volume. Launch planned on SpaceX's Starship in 2028–2029.</p>
+  </div>
+
+  <div class="company-card">
+    <h3>Vast (Haven Stations)</h3>
+    <div class="company-role">In-house ECLSS development for commercial space stations with iterative approach</div>
+    <p>Vast is developing its own life support systems in-house at its Long Beach headquarters. Haven-1 (expected Q1 2027 launch) uses a simple open-loop ECLSS architecture suited to short-duration crewed missions. However, Vast is flying closed-loop ECLSS experiments on every Haven-1 mission to enable rapid iteration. The company expects to be on a 5th-generation ECLSS system by the time Haven-2 launches to support continuous human presence.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">CO₂ Capture Technologies: Comparative Analysis</div>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Technology</th>
+        <th>TRL</th>
+        <th>Crew Scale</th>
+        <th>Power (4-crew)</th>
+        <th>Consumables</th>
+        <th>Lunar Suitability</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>CDRA (Zeolite TSA)</strong></td>
+        <td>9 (operational)</td>
+        <td>4–6</td>
+        <td>~500W</td>
+        <td>Zeolite replacement</td>
+        <td>Moderate — proven but high maintenance</td>
+      </tr>
+      <tr>
+        <td><strong>4BCO₂ (Improved Zeolite)</strong></td>
+        <td>7–8</td>
+        <td>4–6</td>
+        <td>~400W</td>
+        <td>Improved zeolites</td>
+        <td>Moderate — addresses CDRA failure modes</td>
+      </tr>
+      <tr>
+        <td><strong>CDRILS (Ionic Liquid)</strong></td>
+        <td>5–6</td>
+        <td>4 (prototype)</td>
+        <td>~300W est.</td>
+        <td>IL replenishment (~2yr)</td>
+        <td>High — continuous flow, low maintenance</td>
+      </tr>
+      <tr>
+        <td><strong>CDep (Cryogenic)</strong></td>
+        <td>4–5</td>
+        <td>4 (full-scale ground)</td>
+        <td>~130W (deposition)</td>
+        <td>None</td>
+        <td>Very High — leverages lunar cold</td>
+      </tr>
+      <tr>
+        <td><strong>Vozdukh (Amine TSA)</strong></td>
+        <td>9 (operational)</td>
+        <td>6</td>
+        <td>~400W</td>
+        <td>Amine replacement</td>
+        <td>Moderate — degradation concerns</td>
+      </tr>
+      <tr>
+        <td><strong>BLSS (Bioregenerative)</strong></td>
+        <td>3–4</td>
+        <td>4 (ground demo)</td>
+        <td>High (lighting)</td>
+        <td>Biological inputs</td>
+        <td>Future — 2040s for operational systems</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="divider">
+
+  <div class="section-header">China's Yuegong-1: The Large-Scale Demonstrator</div>
+
+  <p>The most advanced large-scale life support demonstration belongs to China. The <strong>Yuegong-1 (Lunar Palace 1)</strong> at Beihang University in Beijing is a 500 m³, 160 m² bioregenerative life support system (BLSS) that successfully sustained a crew of four for 370 days in 2017–2018 — the world record for the longest stay in a self-contained laboratory.</p>
+
+  <p>Yuegong-1 demonstrated 100% atmospheric regeneration through plants and microalgae, with 55% food self-sufficiency. The facility includes two plant cultivation cabins (58 m²), a living area (42 m²) with bedrooms, dining room, bathroom, and waste disposal. A critical August 2025 paper in <em>npj Microgravity</em> warns that NASA has fallen behind China in bioregenerative life support capabilities.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Key Observations</div>
+
+  <div class="highlight-box">
+    <p><strong>No one is building a lunar-base-scale ECLSS today.</strong> All current programs — Gateway HALO, Lunar I-Hab, Artemis Surface Habitat — are designed for 4 crew for 30–90 day stays. True settlement-scale life support (8–12+ crew, continuous habitation for months or years) remains a paper exercise outside of China's Yuegong program.</p>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>CDep is the most promising breakthrough for lunar surface application.</strong> The ability to leverage the Moon's cold environment (permanently shadowed craters near the south pole reach approximately 40K) for radiative cooling could dramatically reduce the power requirements of cryogenic CO₂ capture, potentially making CDep more efficient on the lunar surface than in LEO.</p>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>The CDRILS ISS flight demo in 2028 is a pivotal milestone.</strong> If it succeeds, it could become the baseline air revitalization technology for all post-ISS crewed habitats, displacing zeolite-based systems.</p>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>The commercial space station race is driving ECLSS innovation faster than government programs.</strong> Vast, Starlab, Orbital Reef, and Axiom are all investing in ECLSS as a competitive differentiator, with NASA's 2030 ISS retirement deadline creating urgency. These LEO systems will inform the technology baseline for lunar surface habitats.</p>
+  </div>
+
+  <p class="source-note">Sources: NASA Technical Reports Server, International Conference on Environmental Systems (ICES) proceedings 2018–2025, Honeywell Aerospace, Paragon Space Development Corporation, ESA, npj Microgravity (August 2025), Tech Briefs, SpaceNews, Aerospace America (July 2025).</p>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion · Markus Fix · 2026
+</footer>
+
+</body>
+</html>
