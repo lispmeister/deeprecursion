@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What if the LLM Thought in S-Expressions? — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  /* ── Post-specific styles ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .tab {
+    padding: 0.7rem 1.2rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    position: relative;
+  }
+
+  .code-block .label {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+
+  .kw { color: var(--accent); }
+  .fn { color: var(--cyan); }
+  .str { color: var(--green); }
+  .num { color: var(--amber); }
+  .comment { color: var(--text-dim); font-style: italic; }
+  .node-id { color: var(--amber); font-weight: 500; }
+  .paren { color: #555568; }
+  .op { color: var(--red); }
+
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .comparison .code-block { margin-bottom: 0; }
+
+  .verdict-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .verdict-box .verdict-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .metric-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+  }
+
+  .metric-value {
+    font-size: 1.6rem;
+    font-weight: 300;
+    color: #eeeef4;
+  }
+
+  .metric-sub {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+  }
+
+  .metric-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+  }
+
+  .metric-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  .demo-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .demo-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .demo-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .demo-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: #eee;
+  }
+
+  .demo-btn.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .tree-view {
+    font-size: 0.78rem;
+    line-height: 1.8;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .tree-node {
+    transition: background 0.2s;
+    padding: 0 0.3rem;
+    border-radius: 3px;
+    cursor: default;
+  }
+
+  .tree-node:hover { background: var(--accent-glow); }
+
+  .tree-node.targeted {
+    background: var(--green-dim);
+    outline: 1px solid rgba(90, 224, 160, 0.3);
+  }
+
+  .tree-node.deleted {
+    background: rgba(224, 90, 111, 0.08);
+    outline: 1px solid rgba(224, 90, 111, 0.25);
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+
+  .tree-node.inserted {
+    background: var(--green-dim);
+    outline: 1px solid rgba(90, 224, 160, 0.3);
+    animation: fadeSlideIn 0.4s ease;
+  }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @media (max-width: 700px) {
+    .comparison { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>What if the LLM <em>thought</em> in S-expressions?</h1>
+  <p class="meta">February 13, 2026 · Responding to <a href="https://blog.can.ac/2026/02/12/the-harness-problem/">Can Bölük's "The Harness Problem"</a></p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="thesis">The Thesis</button>
+    <button class="tab" data-tab="protocol">The Protocol</button>
+    <button class="tab" data-tab="demo">Live Demo</button>
+    <button class="tab" data-tab="verdict">Verdict</button>
+  </div>
+
+  <!-- ═══════ THESIS ═══════ -->
+  <div class="panel active" id="panel-thesis">
+    <p>Bölük's hashline insight is that <strong>the model doesn't need to reproduce content to prove it knows what it's editing</strong> — a 2-char hash is enough. Brilliant. But it still operates in line-space. Code isn't lines. Code is a tree. What if we went further?</p>
+
+    <p>In Lisp, <strong>the syntax <em>is</em> the AST</strong>. There is no lossy parse step, no formatting to preserve, no ambiguity between the concrete and abstract tree. The parentheses aren't syntax sugar — they're structure made visible. This means an LLM that "reads" Lisp is <em>already reading a serialized AST</em>. It just doesn't know it.</p>
+
+    <p>So the question becomes: what if we made it know?</p>
+
+    <div class="section-label">The key realization</div>
+    <p>Hashline gives each <em>line</em> an identity. But lines are arbitrary. A function might span 1 line or 40. What we really want is to give each <strong>semantic node</strong> an identity. In Lisp, every parenthesized form is a node. So we can do something no other language allows cleanly:</p>
+
+    <div class="comparison">
+      <div class="code-block">
+        <div class="label">What the programmer writes</div>
+<span class="paren">(</span><span class="kw">defn</span> <span class="fn">factorial</span> <span class="paren">[</span>n<span class="paren">]</span>
+  <span class="paren">(</span><span class="kw">if</span> <span class="paren">(</span><span class="fn">&lt;=</span> n <span class="num">1</span><span class="paren">)</span>
+    <span class="num">1</span>
+    <span class="paren">(</span><span class="fn">*</span> n <span class="paren">(</span><span class="fn">factorial</span> <span class="paren">(</span><span class="fn">dec</span> n<span class="paren">)))))</span>
+      </div>
+      <div class="code-block">
+        <div class="label">What the model sees</div>
+<span class="node-id">§a</span><span class="paren">(</span><span class="kw">defn</span> <span class="fn">factorial</span> <span class="paren">[</span>n<span class="paren">]</span>
+  <span class="node-id">§b</span><span class="paren">(</span><span class="kw">if</span> <span class="node-id">§c</span><span class="paren">(</span><span class="fn">&lt;=</span> n <span class="num">1</span><span class="paren">)</span>
+    <span class="num">1</span>
+    <span class="node-id">§d</span><span class="paren">(</span><span class="fn">*</span> n <span class="node-id">§e</span><span class="paren">(</span><span class="fn">factorial</span> <span class="node-id">§f</span><span class="paren">(</span><span class="fn">dec</span> n<span class="paren">)))))</span>
+      </div>
+    </div>
+
+    <p>Each <code>§</code>-prefixed tag is a <strong>content-addressed node ID</strong> — a short hash of the s-expression rooted at that paren. Not a line number. Not a character offset. A <em>semantic address</em>. The model doesn't point at "line 3" — it points at <code>§c</code>, which <em>means</em> <code>(&lt;= n 1)</code> regardless of how the code is formatted or where it appears in the file.</p>
+
+    <div class="verdict-box">
+      <div class="verdict-title">The difference</div>
+      <p style="margin:0">
+        Hashline: "replace line 2, hash f1" → fragile to reformatting, insertion, reordering.<br>
+        S-expr node IDs: "replace §c" → stable across all formatting, movement, refactoring. The identity travels with the semantics.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════ PROTOCOL ═══════ -->
+  <div class="panel" id="panel-protocol">
+    <div class="section-label">Edit primitives</div>
+    <p>The model gets exactly four operations. No diffs. No string matching. No patches. Each operation is itself an s-expression — the model never leaves its native syntax:</p>
+
+    <div class="code-block">
+      <div class="label">The four operations</div>
+<span class="comment">;; Replace a node's content entirely</span>
+<span class="paren">(</span><span class="op">replace!</span> <span class="node-id">§c</span> <span class="paren">(</span><span class="fn">zero?</span> n<span class="paren">))</span>
+
+<span class="comment">;; Wrap a node inside a new form</span>
+<span class="paren">(</span><span class="op">wrap!</span> <span class="node-id">§d</span> <span class="paren">(</span><span class="kw">when</span> <span class="paren">(</span><span class="fn">pos?</span> n<span class="paren">)</span> <span class="node-id">◊</span><span class="paren">))</span>  <span class="comment">; ◊ = the original node</span>
+
+<span class="comment">;; Insert a sibling before/after a node</span>
+<span class="paren">(</span><span class="op">insert-after!</span> <span class="node-id">§c</span> <span class="paren">(</span><span class="fn">println</span> <span class="str">"base case hit"</span><span class="paren">))</span>
+
+<span class="comment">;; Delete a node</span>
+<span class="paren">(</span><span class="op">delete!</span> <span class="node-id">§e</span><span class="paren">)</span>
+    </div>
+
+    <p>Notice what's <em>absent</em>. No line numbers. No character ranges. No reproduction of the old content. No whitespace. The model says <em>what</em> to change and <em>what to change it to</em>. The harness handles <em>where</em> and <em>how</em>.</p>
+
+    <hr class="divider">
+
+    <div class="section-label">Why this is structurally superior to hashline</div>
+
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-label">Anchor granularity</div>
+        <div class="metric-value">Node</div>
+        <div class="metric-sub">vs. line (hashline) or string (str_replace)</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:95%;background:var(--green)"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Content reproduction</div>
+        <div class="metric-value">Zero</div>
+        <div class="metric-sub">Model never re-states old code</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--green)"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Stale edit detection</div>
+        <div class="metric-value">Exact</div>
+        <div class="metric-sub">Hash is the node, not a line approximation</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--green)"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Reorder-safe</div>
+        <div class="metric-value">Yes</div>
+        <div class="metric-sub">Moving code doesn't invalidate IDs</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--green)"></div></div>
+      </div>
+    </div>
+
+    <p>But here's the deeper insight. <strong>Composability.</strong> Because each edit is itself an s-expression, edits compose naturally. You can nest them, sequence them, even write macros over them:</p>
+
+    <div class="code-block">
+      <div class="label">Composed edit — extract and guard</div>
+<span class="paren">(</span><span class="kw">do</span>
+  <span class="paren">(</span><span class="op">replace!</span> <span class="node-id">§c</span> <span class="paren">(</span><span class="fn">zero?</span> n<span class="paren">))</span>
+  <span class="paren">(</span><span class="op">wrap!</span> <span class="node-id">§a</span>
+    <span class="paren">(</span><span class="kw">defn</span> <span class="fn">factorial</span> <span class="paren">[</span>n<span class="paren">]</span>
+      <span class="paren">(</span><span class="fn">assert</span> <span class="paren">(</span><span class="fn">nat-int?</span> n<span class="paren">)</span> <span class="str">"n must be natural"</span><span class="paren">)</span>
+      <span class="node-id">◊</span><span class="paren">)))</span>
+
+<span class="comment">;; This atomically: fixes the base case AND wraps the body in a guard.</span>
+<span class="comment">;; The harness validates both node IDs before applying either change.</span>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-label">The radical extension: edits as data</div>
+    <p>Because edits are s-expressions, they're <strong>first-class data</strong>. The harness can quote them, store them, invert them, diff them, and even ask the model to <em>review its own pending edits as code</em>. A refactoring plan isn't a blob of text — it's a program that transforms programs.</p>
+
+    <div class="code-block">
+      <div class="label">Meta: The model reviews its own edit</div>
+<span class="comment">;; Harness: "Here is your proposed edit. Confirm or revise."</span>
+<span class="paren">(</span><span class="kw">let</span> <span class="paren">[</span>edit <span class="paren">(</span><span class="op">replace!</span> <span class="node-id">§c</span> <span class="paren">(</span><span class="fn">zero?</span> n<span class="paren">))]</span>
+  <span class="paren">(</span><span class="fn">preview</span> edit<span class="paren">)</span>        <span class="comment">;; → shows before/after in context</span>
+  <span class="paren">(</span><span class="fn">inverse</span> edit<span class="paren">)</span>        <span class="comment">;; → (replace! §c' (<= n 1))</span>
+  <span class="paren">(</span><span class="fn">conflicts?</span> edit<span class="paren">)</span>    <span class="comment">;; → nil</span>
+  <span class="paren">(</span><span class="fn">apply!</span> edit<span class="paren">))</span>       <span class="comment">;; → commit</span>
+    </div>
+  </div>
+
+  <!-- ═══════ DEMO ═══════ -->
+  <div class="panel" id="panel-demo">
+    <div class="section-label">Interactive: Apply edits to a live AST</div>
+    <p style="margin-bottom:1rem">Click an operation to see how node-addressed editing works. Each edit targets a node by its § ID — watch how the tree transforms.</p>
+
+    <div class="demo-area">
+      <div class="demo-controls">
+        <button class="demo-btn" data-op="reset">↺ Reset</button>
+        <button class="demo-btn" data-op="replace">replace! §c</button>
+        <button class="demo-btn" data-op="wrap">wrap! §d</button>
+        <button class="demo-btn" data-op="insert">insert-after! §b</button>
+        <button class="demo-btn" data-op="delete">delete! §f</button>
+        <button class="demo-btn" data-op="compose">compose all</button>
+      </div>
+      <div class="tree-view" id="tree-output"></div>
+    </div>
+
+    <div id="edit-description" class="verdict-box" style="display:none">
+      <div class="verdict-title" id="edit-title"></div>
+      <p style="margin:0" id="edit-text"></p>
+    </div>
+  </div>
+
+  <!-- ═══════ VERDICT ═══════ -->
+  <div class="panel" id="panel-verdict">
+    <div class="section-label">So would this beat hashline?</div>
+
+    <p><strong>Under idealized conditions — single homoiconic language, no formatting concerns — yes, unambiguously.</strong></p>
+
+    <p>Hashline solves the <em>identification</em> problem but still operates in line-space, which is a <strong>lossy projection</strong> of semantic structure. A single logical change might span multiple lines or only part of a line. Lines shift when you add code above. A reformatter invalidates every hash in the file.</p>
+
+    <p>S-expression node addressing solves identification at the <em>correct</em> level of abstraction: the semantic unit. A node ID refers to a specific subexpression regardless of where it is in the file, how it's indented, or what's around it. The identity is <em>intrinsic</em> to the content, not to its position.</p>
+
+    <hr class="divider">
+
+    <div class="section-label">The deeper argument: cognitive alignment</div>
+    <p>When an LLM reads Lisp, every token is <em>already</em> a tree operation: an open paren pushes a frame, a close paren pops one. The model's internal representation of Lisp code likely resembles an AST more than its representation of Python or JavaScript, because <strong>the syntax forces tree-shaped attention patterns</strong>.</p>
+
+    <p>By making the edit language also be s-expressions, you eliminate every representation conversion. Code is trees. Edits are trees. The model's cognition is trees. <strong>Zero impedance mismatch</strong> at any layer.</p>
+
+    <hr class="divider">
+
+    <div class="section-label">The honest caveat</div>
+    <p>This is a <strong>beautiful impossibility as a general solution</strong>. You can't rewrite the world in Lisp. Bölük's hashline wins precisely because it works on <em>any text file in any language</em> with zero setup.</p>
+
+    <p>The interesting middle ground: use tree-sitter to give <em>any</em> language pseudo-homoiconic node IDs. You'd get most of the benefits — semantic anchoring, reorder stability, no content reproduction — without requiring Lisp. The formatting round-trip problem remains, but only for the <em>inserted</em> code, not for the targeting mechanism.</p>
+
+    <div class="verdict-box">
+      <div class="verdict-title">The real takeaway</div>
+      <p style="margin:0">The closer the edit interface matches the model's internal representation of code, the fewer mechanical failures you get. Hashline moves from strings to lines. S-expr addressing moves from lines to semantic nodes. The ideal — which tree-sitter approximates for all languages — is editing at the <em>meaning</em> level, with the harness handling everything below.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion · Markus Fix · 2026
+</footer>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      if (tab.dataset.tab === 'demo') renderTree('reset');
+    });
+  });
+
+  function renderNode(node, depth, state) {
+    const indent = '  '.repeat(depth);
+    let cls = '';
+    let extra = '';
+
+    if (state === 'replace' && node.id === '§c') {
+      cls = 'targeted'; extra = ' <span class="op">→ (zero? n)</span>';
+    }
+    if (state === 'wrap' && node.id === '§d') cls = 'targeted';
+    if (state === 'delete' && node.id === '§f') cls = 'deleted';
+    if (state === 'insert' && node.id === '§b') cls = 'targeted';
+    if (state === 'compose') {
+      if (node.id === '§c') { cls = 'targeted'; extra = ' <span class="op">→ (zero? n)</span>'; }
+      if (node.id === '§d') cls = 'targeted';
+      if (node.id === '§f') cls = 'deleted';
+    }
+
+    const idStr = node.id ? `<span class="node-id">${node.id}</span>` : '  ';
+    const typeStr = `<span class="kw">${node.type}</span>`;
+    let label = '';
+    if (node.name) label = ` <span class="fn">${node.name}</span> ${node.params || ''}`;
+    else if (node.content) label = ` <span style="color:var(--text-dim)">${node.content}</span>`;
+
+    let line = `${indent}<span class="tree-node ${cls}">${idStr} ${typeStr}${label}${extra}</span>\n`;
+
+    if ((state === 'insert' || state === 'compose') && node.id === '§b') {
+      line += `${indent}  <span class="tree-node inserted"><span class="node-id">§g</span> <span class="kw">expr</span> <span class="str">(println "checking...")</span></span>\n`;
+    }
+
+    if ((state === 'wrap' || state === 'compose') && node.id === '§d') {
+      line += `${indent}  <span class="tree-node inserted"><span class="node-id">§h</span> <span class="kw">when</span> <span style="color:var(--text-dim)">(pos? n)</span></span>\n`;
+      line += `${indent}    <span class="tree-node targeted"><span class="node-id">§d</span> <span style="color:var(--text-dim)">◊ (original)</span></span>\n`;
+      return line;
+    }
+
+    if (node.children) {
+      for (const child of node.children) {
+        line += renderNode(child, depth + 1, state);
+      }
+    }
+    return line;
+  }
+
+  const baseTree = {
+    id: '§a', type: 'defn', name: 'factorial', params: '[n]',
+    children: [{
+      id: '§b', type: 'if',
+      children: [
+        { id: '§c', type: 'expr', content: '(<= n 1)' },
+        { id: null, type: 'literal', content: '1' },
+        { id: '§d', type: 'expr', content: '(* n ...)',
+          children: [
+            { id: '§e', type: 'call', content: '(factorial ...)',
+              children: [
+                { id: '§f', type: 'call', content: '(dec n)' }
+              ]}]}]}]
+  };
+
+  function renderTree(state) {
+    document.getElementById('tree-output').innerHTML = renderNode(baseTree, 0, state);
+    document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.demo-btn[data-op="${state}"]`)?.classList.add('active');
+
+    const desc = document.getElementById('edit-description');
+    const descs = {
+      reset: null,
+      replace: ['replace! §c → (zero? n)', 'The model says: "replace §c with (zero? n)". It doesn\'t reproduce (<= n 1). It names the node by its content hash and provides the replacement.'],
+      wrap: ['wrap! §d → (when (pos? n) ◊)', 'Wrapping inserts a parent around an existing node. The ◊ marker means "put the original here." No other edit format expresses this in one operation.'],
+      insert: ['insert-after! §b → (println "checking...")', 'Insert a sibling after §b. The model doesn\'t need to know what line §b ends on. Semantic adjacency, not positional.'],
+      delete: ['delete! §f', 'One token: the node ID. The model says "remove this subtree" and the harness handles the rest.'],
+      compose: ['(do replace! wrap! insert! delete!)', 'All four edits composed atomically. The harness validates every node ID before applying any change.']
+    };
+
+    if (descs[state]) {
+      desc.style.display = 'block';
+      document.getElementById('edit-title').textContent = descs[state][0];
+      document.getElementById('edit-text').textContent = descs[state][1];
+    } else {
+      desc.style.display = 'none';
+    }
+  }
+
+  document.querySelectorAll('.demo-btn').forEach(btn => {
+    btn.addEventListener('click', () => renderTree(btn.dataset.op));
+  });
+
+  renderTree('reset');
+</script>
+</body>
+</html>
