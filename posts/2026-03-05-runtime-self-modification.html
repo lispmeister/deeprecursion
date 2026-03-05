@@ -73,6 +73,211 @@
   .see-also a {
     color: var(--accent);
   }
+
+  /* ── Deploy timeline ── */
+  .timeline-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .timeline-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .timeline-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .timeline-btn:hover {
+    border-color: var(--accent);
+    color: #eee;
+  }
+
+  .timeline-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .track-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+  }
+
+  .track-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .track-name.elixir {
+    color: var(--accent);
+  }
+
+  .track-time {
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+  }
+
+  .track-bar {
+    position: relative;
+    height: 32px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .track-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    transition: width 0.1s linear;
+  }
+
+  .track .track-progress {
+    background: rgba(100, 100, 130, 0.25);
+  }
+
+  .track:last-child .track-progress {
+    background: rgba(90, 160, 255, 0.2);
+  }
+
+  .track-steps {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    z-index: 1;
+  }
+
+  .step {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.03em;
+    color: var(--text-dim);
+    border-right: 1px solid var(--border);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 0 0.4rem;
+  }
+
+  .step:last-child {
+    border-right: none;
+  }
+
+  .step.active {
+    color: #eeeef4;
+  }
+
+  .step.done {
+    color: var(--text-dim);
+  }
+
+  .step.ts-active {
+    background: rgba(224, 170, 90, 0.15);
+  }
+
+  .step.ts-done {
+    background: rgba(224, 170, 90, 0.06);
+  }
+
+  .step.ex-active {
+    background: rgba(90, 224, 160, 0.2);
+  }
+
+  .step.ex-done {
+    background: rgba(90, 224, 160, 0.08);
+  }
+
+  .step.failure {
+    background: rgba(224, 90, 111, 0.15) !important;
+    color: var(--red) !important;
+  }
+
+  .track-status {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.35rem;
+    min-height: 1.2em;
+    transition: color 0.2s;
+  }
+
+  .track-status.warn {
+    color: var(--red);
+  }
+
+  .session-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+  }
+
+  .session-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.4s;
+  }
+
+  .session-dot.active {
+    background: var(--green);
+    box-shadow: 0 0 4px rgba(90, 224, 160, 0.4);
+  }
+
+  .session-dot.dead {
+    background: var(--red);
+    box-shadow: 0 0 4px rgba(224, 90, 111, 0.4);
+  }
+
+  .session-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    margin-left: 0.2rem;
+  }
+
+  .timeline-result {
+    margin-top: 1.25rem;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    min-height: 1.2em;
+    line-height: 1.5;
+  }
+
+  .timeline-result strong {
+    color: var(--accent);
+  }
 </style>
 </head>
 <body>
@@ -127,6 +332,55 @@
 
   <p><code>Code.compile_string/1</code> and <code>:code.load_binary/3</code> give you runtime compilation. An agent can generate Elixir source as a string, compile it to BEAM bytecode, and load it — all in the running system. Pattern matching on messages gives you a clean, verifiable interface for agent communication that's much harder to accidentally break than a JSON API.</p>
 
+  <div class="section-header">Deploying a Change: TypeScript vs. Elixir</div>
+
+  <div class="timeline-container">
+    <div class="timeline-controls">
+      <button class="timeline-btn" id="btn-play">Run comparison</button>
+      <button class="timeline-btn" id="btn-reset" style="display:none">Reset</button>
+    </div>
+
+    <div class="timeline-tracks">
+      <div class="track">
+        <div class="track-label">
+          <span class="track-name">TypeScript</span>
+          <span class="track-time" id="ts-time">0.0s</span>
+        </div>
+        <div class="track-bar">
+          <div class="track-steps" id="ts-steps"></div>
+          <div class="track-progress" id="ts-progress"></div>
+        </div>
+        <div class="track-status" id="ts-status">Ready</div>
+        <div class="session-indicator" id="ts-sessions">
+          <span class="session-dot active"></span>
+          <span class="session-dot active"></span>
+          <span class="session-dot active"></span>
+          <span class="session-label">3 active sessions</span>
+        </div>
+      </div>
+
+      <div class="track">
+        <div class="track-label">
+          <span class="track-name elixir">Elixir/BEAM</span>
+          <span class="track-time" id="ex-time">0.0s</span>
+        </div>
+        <div class="track-bar">
+          <div class="track-steps" id="ex-steps"></div>
+          <div class="track-progress" id="ex-progress"></div>
+        </div>
+        <div class="track-status" id="ex-status">Ready</div>
+        <div class="session-indicator" id="ex-sessions">
+          <span class="session-dot active"></span>
+          <span class="session-dot active"></span>
+          <span class="session-dot active"></span>
+          <span class="session-label">3 active sessions</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-result" id="timeline-result"></div>
+  </div>
+
   <hr class="divider">
 
   <div class="section-header">The Honest Tradeoff</div>
@@ -151,5 +405,151 @@
   Deeprecursion · Markus Fix · 2026
 </footer>
 
+<script>
+(function() {
+  const tsSteps = [
+    { label: 'edit source',      pct: 8,  dur: 800 },
+    { label: 'git branch',       pct: 8,  dur: 600 },
+    { label: 'pnpm build',       pct: 28, dur: 3200 },
+    { label: 'stop gateway',     pct: 10, dur: 800,  killSessions: true },
+    { label: 'restart',          pct: 18, dur: 2000 },
+    { label: 'reconnect clients',pct: 14, dur: 1500 },
+    { label: 'restore sessions', pct: 14, dur: 1200, reviveSessions: true },
+  ];
+
+  const exSteps = [
+    { label: ':code.load_binary/3', pct: 70, dur: 400, hotSwap: true },
+    { label: 'done',                pct: 30, dur: 100 },
+  ];
+
+  const tsStepsEl = document.getElementById('ts-steps');
+  const exStepsEl = document.getElementById('ex-steps');
+  const tsProgress = document.getElementById('ts-progress');
+  const exProgress = document.getElementById('ex-progress');
+  const tsTime = document.getElementById('ts-time');
+  const exTime = document.getElementById('ex-time');
+  const tsStatus = document.getElementById('ts-status');
+  const exStatus = document.getElementById('ex-status');
+  const tsSessions = document.getElementById('ts-sessions');
+  const exSessions = document.getElementById('ex-sessions');
+  const result = document.getElementById('timeline-result');
+  const btnPlay = document.getElementById('btn-play');
+  const btnReset = document.getElementById('btn-reset');
+
+  function buildSteps(container, steps, prefix) {
+    container.innerHTML = '';
+    steps.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'step';
+      el.style.width = s.pct + '%';
+      el.textContent = s.label;
+      el.dataset.index = i;
+      el.id = prefix + '-step-' + i;
+      container.appendChild(el);
+    });
+  }
+
+  function setSessionState(container, state, label) {
+    const dots = container.querySelectorAll('.session-dot');
+    const lbl = container.querySelector('.session-label');
+    dots.forEach(d => { d.className = 'session-dot ' + state; });
+    lbl.textContent = label;
+  }
+
+  function reset() {
+    buildSteps(tsStepsEl, tsSteps, 'ts');
+    buildSteps(exStepsEl, exSteps, 'ex');
+    tsProgress.style.width = '0%';
+    exProgress.style.width = '0%';
+    tsTime.textContent = '0.0s';
+    exTime.textContent = '0.0s';
+    tsStatus.textContent = 'Ready';
+    tsStatus.className = 'track-status';
+    exStatus.textContent = 'Ready';
+    exStatus.className = 'track-status';
+    setSessionState(tsSessions, 'active', '3 active sessions');
+    setSessionState(exSessions, 'active', '3 active sessions');
+    result.innerHTML = '';
+    btnPlay.style.display = '';
+    btnReset.style.display = 'none';
+  }
+
+  async function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  async function animateTrack(steps, prefix, timeEl, statusEl, sessionsEl, speed) {
+    let elapsed = 0;
+    let progressPct = 0;
+    const progressEl = prefix === 'ts' ? tsProgress : exProgress;
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const stepEl = document.getElementById(prefix + '-step-' + i);
+
+      stepEl.classList.add(prefix + '-active', 'active');
+      statusEl.textContent = step.label;
+
+      if (step.killSessions) {
+        setSessionState(sessionsEl, 'dead', '0 active sessions — dropped');
+        statusEl.className = 'track-status warn';
+      }
+      if (step.reviveSessions) {
+        setSessionState(sessionsEl, 'active', '3 active sessions — restored');
+        statusEl.className = 'track-status';
+      }
+      if (step.hotSwap) {
+        statusEl.textContent = 'hot-swapping module...';
+      }
+
+      const frames = Math.max(1, Math.round(step.dur / speed / 16));
+      const pctPerFrame = step.pct / frames;
+      const timePerFrame = (step.dur / 1000) / frames;
+
+      for (let f = 0; f < frames; f++) {
+        progressPct += pctPerFrame;
+        elapsed += timePerFrame;
+        progressEl.style.width = Math.min(progressPct, 100) + '%';
+        timeEl.textContent = elapsed.toFixed(1) + 's';
+        await sleep(16);
+      }
+
+      stepEl.classList.remove(prefix + '-active', 'active');
+      stepEl.classList.add(prefix + '-done', 'done');
+    }
+
+    statusEl.textContent = 'Done';
+    progressEl.style.width = '100%';
+    return elapsed;
+  }
+
+  async function play() {
+    btnPlay.style.display = 'none';
+    const speed = 8;
+
+    // Start Elixir immediately but don't await yet
+    const exPromise = animateTrack(exSteps, 'ex', exTime, exStatus, exSessions, speed);
+
+    // Elixir finishes almost instantly, then show its result
+    const exElapsed = await exPromise;
+
+    exStatus.textContent = 'Done — zero downtime';
+    setSessionState(exSessions, 'active', '3 active sessions — uninterrupted');
+
+    // Now run TypeScript (slower, sequential)
+    const tsElapsed = await animateTrack(tsSteps, 'ts', tsTime, tsStatus, tsSessions, speed);
+
+    const ratio = (tsElapsed / exElapsed).toFixed(0);
+    result.innerHTML = '<strong>Elixir: ' + exElapsed.toFixed(1) + 's</strong>, zero downtime, all sessions preserved.<br>' +
+      'TypeScript: ' + tsElapsed.toFixed(1) + 's, sessions dropped and rebuilt. <strong>' + ratio + '× slower.</strong>';
+
+    btnReset.style.display = '';
+  }
+
+  reset();
+  btnPlay.addEventListener('click', play);
+  btnReset.addEventListener('click', reset);
+})();
+</script>
 </body>
 </html>
