@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenClaw NG: Building on Opal — Deeprecursion</title>
+<title>Loom: Building on Opal — Deeprecursion</title>
 <link rel="stylesheet" href="../assets/style.css">
 <style>
   .section-header {
@@ -114,7 +114,7 @@
 <hr class="site-divider">
 
 <main class="page">
-  <h1>OpenClaw NG: The Case for Building on Opal</h1>
+  <h1>Loom: The Case for Building on Opal</h1>
   <p class="meta">Agent Architecture · March 5, 2026</p>
 
   <div class="see-also">
@@ -280,7 +280,7 @@
 
   <div class="section-header">The Build Plan</div>
 
-  <p>Starting from Opal, building OpenClaw NG incrementally:</p>
+  <p>Starting from Opal, building Loom incrementally:</p>
 
   <p><strong>Phase 1: Complete the agent core.</strong> Add Anthropic and OpenAI providers (implement the <code>Opal.Provider</code> behaviour, reuse the shared OpenAI helpers already in the codebase). Add approval gates to tool execution. Add auth profile failover. This gives us a fully functional multi-provider coding agent with safety controls.</p>
 
@@ -388,7 +388,7 @@
 
   <p><strong>3. Observability is built into the runtime.</strong> Connect to a running BEAM node with <code>:observer</code> or <code>remote_console</code> and you can inspect every process, every message queue, every supervision tree, every ETS table &mdash; live, in production. No logging framework, no metrics pipeline, no APM vendor. The runtime <em>is</em> the observability platform. For an AI agent system where understanding what the agent is doing (and why) is a safety requirement, this matters.</p>
 
-  <p>OpenClaw proved the product. Opal proved the architecture. OpenClaw NG would combine both: the channel ecosystem and user-facing features of OpenClaw, running on a core that was designed from the ground up for the properties that matter most in an AI agent &mdash; fault isolation, hot upgrades, and runtime self-modification.</p>
+  <p>OpenClaw proved the product. Opal proved the architecture. Loom would combine both: the channel ecosystem and user-facing features of OpenClaw, running on a core that was designed from the ground up for the properties that matter most in an AI agent &mdash; fault isolation, hot upgrades, and runtime self-modification. The name fits: a loom runs on a beam, and weaves new patterns at runtime.</p>
 
   <p>Five weeks of focused work. One architect. Unlimited tokens. The tools are all there.</p>
 
