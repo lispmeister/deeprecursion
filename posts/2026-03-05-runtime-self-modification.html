@@ -300,6 +300,8 @@
     Continues from: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware: How Can an AI Agent Patch Its Own Code?</a>
   </div>
 
+  <div class="abstract">TypeScript is a dead language at runtime. Every "self-modification" approach requires a full rebuild and restart. Common Lisp collapses the distinction between source and running program. Elixir/BEAM gives you hot code swapping with structural safety. The question is which tradeoff matters more: depth or fault tolerance.</div>
+
   <p>The <a href="2026-03-05-openclaw-self-modification.html">previous post</a> explored five approaches to making OpenClaw — a TypeScript agent system — aware of and capable of modifying its own code. But every one of those approaches dances around a fundamental problem: the entire "self-patch workflow" with git branches, <code>pnpm build</code>, and restart cycles exists because TypeScript is a dead language at runtime. You compile it, run the artifact, and if you want to change behavior you stop, recompile, and start again.</p>
 
   <p>The agent's "self-awareness" is mediated by the filesystem and build toolchain — it's not modifying <em>itself</em>, it's modifying source files that will later become a new version of itself. That's not self-modification. That's writing a letter to your future self.</p>
@@ -312,6 +314,8 @@
 
   <p>The Lisp image model collapses the distinction between "source code," "running program," and "development environment" into a single thing. A running Lisp image contains all its own source as manipulable data structures. <code>DEFUN</code> at the REPL doesn't write to a file and rebuild — it compiles a function and installs it into the running image immediately. CLOS generic functions can be redefined, and existing instances pick up the new behavior. The condition/restart system means that when something goes wrong during self-modification, the system doesn't crash — it <em>pauses at the error</em> and offers structured recovery options. An agent could literally catch its own modification errors and try a different patch.</p>
 
+  <aside class="sidenote"><strong>Condition/restart</strong> is Lisp's exception system. Unlike try/catch, it separates <em>signaling</em> an error from <em>deciding how to handle it</em>. The caller can offer multiple recovery strategies; the handler picks one.</aside>
+
   <p>The connection to the <a href="2026-02-13-sexp-native-editing.html">s-expressions post</a> isn't accidental. If the agent's code is s-expressions, then generating code and generating data are the same operation. The agent doesn't produce a text diff and hope it parses — it produces a list, and that list <em>is</em> the code. <code>(defun handle-message (msg) ...)</code> is simultaneously a data structure the agent can inspect and transform, and the actual function definition. Homoiconicity isn't a curiosity here; it's the enabling property.</p>
 
   <p>Concretely: the five approaches from the previous post collapse into one. There's no "source-aware workspace skill" vs. "self-patch workflow" vs. "dev agent" — the running system <em>is</em> its own source, and modification is just calling <code>COMPILE</code> and <code>LOAD</code> on new forms. You'd <code>SAVE-LISP-AND-DIE</code> to snapshot the image (including all modifications) and restart from there. The entire git-branch-PR-merge-rebuild cycle becomes: evaluate a form, observe the result, keep or undo.</p>
@@ -321,6 +325,8 @@
   <hr class="divider">
 
   <div class="section-header">Elixir/BEAM: The Pragmatic Answer</div>
+
+  <aside class="sidenote"><strong>Telecom origins:</strong> Erlang was created at Ericsson in 1986 for telephone switches. The AXD 301 ATM switch achieved 99.9999999% uptime — nine nines — running Erlang.</aside>
 
   <p>The BEAM VM was built for systems that modify themselves without stopping. Erlang's hot code swapping isn't a hack — it's a design requirement from telecom, where "restart to deploy" means dropped calls. Two versions of a module coexist simultaneously during an upgrade: existing processes finish their current call on the old code, new calls dispatch to the new version. The <code>code_change/3</code> callback in GenServers lets you migrate process state between versions. This is exactly what a self-modifying agent needs: change behavior without losing context.</p>
 

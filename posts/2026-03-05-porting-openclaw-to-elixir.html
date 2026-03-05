@@ -107,6 +107,8 @@
     Part 3 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a> and <a href="2026-03-05-runtime-self-modification.html">Runtime Self-Modification: Beyond TypeScript</a>.
   </div>
 
+  <div class="abstract">OpenClaw is ~470K lines of TypeScript. We don't need to port all of it — just the core gateway, agent loop, plugin runtime, and state layer. Keep the 40+ channel adapters in TypeScript, bridge them via WebSocket. Estimated effort: 3–4 months for humans, 4–6 weeks with frontier coding agents.</div>
+
   <p>The <a href="2026-03-05-runtime-self-modification.html">previous post</a> argued that building a self-modifying agent in TypeScript is a fundamental mismatch — the language treats runtime code modification as an error condition. Elixir/BEAM treats it as a design requirement. So what would it actually take to port <a href="https://docs.openclaw.ai">OpenClaw</a> to Elixir?</p>
 
   <p>We looked at the codebase. Here's what we found.</p>
@@ -133,6 +135,8 @@
     <li>All 54+ skills</li>
     <li>Native apps and web UI</li>
   </ul>
+
+  <aside class="sidenote"><strong>Why WebSocket?</strong> OpenClaw's channel adapters already communicate with the gateway via local WebSocket. The protocol is JSON frames with req/res/event types. Elixir just needs to speak the same wire format.</aside>
 
   <p><strong>The bridge:</strong> The channel plugins already speak WebSocket to the gateway. The Elixir core exposes the same local WebSocket endpoint, existing TypeScript plugins connect as clients. Minimal changes on the TS side.</p>
 
@@ -262,7 +266,7 @@
   </div>
 
   <div style="background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 1.25rem 1.5rem; margin: 2rem 0; font-size: 0.9rem;">
-    Continue reading: <a href="2026-03-05-openclaw-ng.html" style="color: var(--accent);">Loom: The Case for Building on Opal</a> — what if someone already made the hard architectural decisions correctly?
+    Continue reading: <a href="2026-03-05-loom.html" style="color: var(--accent);">Loom: The Case for Building on Opal</a> — what if someone already made the hard architectural decisions correctly?
   </div>
 
 </main>

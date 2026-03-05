@@ -77,6 +77,8 @@
   <h1>Making OpenClaw Self-Aware: How Can an AI Agent Patch Its Own Code?</h1>
   <p class="meta">Agent Architecture · March 5, 2026</p>
 
+  <div class="abstract">OpenClaw supports self-modification at the periphery — skills, config, memory — but not its own core code. We explore five approaches to bridging that gap, from source-aware workspace skills to a closed-loop diagnostic agent, and confront the security implications of each.</div>
+
   <div class="section-header">The Question</div>
 
   <p>We are working with an installation of <a href="https://docs.openclaw.ai">OpenClaw</a> and now we are trying to figure out how the system can be made self-aware. How can the system manage its own code? How can we deploy from the local checkout of the GitHub repository but have the OpenClaw system itself — as in the LLM it uses to interact with the user — have enough awareness so it can patch its own code?</p>
@@ -125,6 +127,8 @@
   <p>OpenClaw's release notes mention that agents should call <code>config.schema</code> before config edits to avoid guessing. This is already a form of self-awareness — the agent can introspect its own configuration schema, understand what knobs exist, and turn them. For a local checkout, you could extend this pattern: have the agent read its own <code>package.json</code>, its skill manifest, its tool policies, and reason about what capabilities it has vs. what it needs.</p>
 
   <h3>4. The "Dev Agent" Pattern — A Second Agent That Works on the First</h3>
+
+  <aside class="sidenote"><strong>Separation of concerns.</strong> This is the same principle behind Erlang's "application controller" — a separate process that manages upgrades for the running system without being part of it.</aside>
 
   <p>Rather than having the running OpenClaw instance modify itself directly (which creates obvious bootstrapping and stability issues), spin up a second agent workspace dedicated to development. This dev agent:</p>
 

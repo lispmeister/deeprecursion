@@ -7,7 +7,7 @@ series_part: 3
 prev: "Runtime Self-Modification: Beyond TypeScript"
 prev_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-runtime-self-modification.md
 next: "Loom: The Case for Building on Opal"
-next_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-openclaw-ng.md
+next_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-loom.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-porting-openclaw-to-elixir.html
 ---
 
@@ -97,4 +97,4 @@ The agent loop is the component that doesn't compress as much — it has the mos
 
 > **The real bottleneck becomes review.** With unlimited tokens, agents can produce the entire Elixir codebase in a week. But someone needs to verify the supervision tree is right, the failure modes are handled, and the hot-swap paths actually work. That review and iteration is ~60% of the remaining calendar time. One human architect plus agents: ~5–6 weeks wall clock.
 
-*Continue reading: [Loom: The Case for Building on Opal](2026-03-05-openclaw-ng.md)*
+*Continue reading: [Loom: The Case for Building on Opal](2026-03-05-loom.md)*

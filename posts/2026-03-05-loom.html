@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Loom: Building on Opal — Deeprecursion</title>
 <link rel="stylesheet" href="../assets/style.css">
-<link rel="alternate" type="text/markdown" href="2026-03-05-openclaw-ng.md">
+<link rel="alternate" type="text/markdown" href="2026-03-05-loom.md">
 <style>
   .section-header {
     font-size: 0.7rem;
@@ -122,6 +122,8 @@
     Part 4 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a>, <a href="2026-03-05-runtime-self-modification.html">Runtime Self-Modification: Beyond TypeScript</a>, and <a href="2026-03-05-porting-openclaw-to-elixir.html">Porting OpenClaw's Core to Elixir</a>.
   </div>
 
+  <div class="abstract">Opal is an existing Elixir port of the Pi coding agent — the same engine at OpenClaw's core. It's ~4,500 lines of clean OTP with 87 test files, and it already solves the hardest architectural problem: decomposing a 57K-line agent loop into proper supervision trees. Build on it, bridge the TypeScript channels, and you have a self-modifying agent platform in about five weeks.</div>
+
   <p>This series started with a question: <a href="2026-03-05-openclaw-self-modification.html">how can an AI agent patch its own code?</a> We worked through <a href="2026-03-05-runtime-self-modification.html">why TypeScript is the wrong substrate</a> for runtime self-modification, then <a href="2026-03-05-porting-openclaw-to-elixir.html">estimated the effort</a> to port OpenClaw's core to Elixir. The conclusion was 4&ndash;6 weeks with coding agents.</p>
 
   <p>Then we found <a href="https://github.com/matteing/opal">Opal</a>.</p>
@@ -207,6 +209,8 @@
   </table>
 
   <div class="section-header">What This Means for the Port</div>
+
+  <aside class="sidenote"><strong>57K lines in one file.</strong> For context, the entire Linux kernel scheduler is ~12K lines. OpenClaw's <code>run.ts</code> contains the equivalent of a kernel, a shell, and a process manager in a single function.</aside>
 
   <p>The hardest architectural decision in any Elixir port of OpenClaw is decomposing the agent loop. OpenClaw's <code>pi-embedded-runner/run.ts</code> is a single 57,000-line file containing the entire agent lifecycle: history management, tool execution, token counting, context window management, LLM invocation with retry and failover, session compaction. Porting that monolith to OTP processes &mdash; deciding which parts become GenServers, how they supervise each other, where state lives &mdash; is the kind of work that resists automation. It requires understanding both the source semantics and the target paradigm deeply enough to make structural decisions that will hold up under production load.</p>
 
@@ -384,6 +388,8 @@
   <p>Three reasons.</p>
 
   <p><strong>1. Runtime self-modification becomes a feature, not a hack.</strong> OpenClaw's TypeScript architecture requires a full build-restart cycle to change agent behavior. On the BEAM, the agent can modify its own tools, swap its own modules, and upgrade its own capabilities &mdash; all while maintaining active sessions. The supervision tree ensures that a bad modification is automatically rolled back. This is the enabling capability for the self-improving agent we described in the <a href="2026-03-05-openclaw-self-modification.html">first post</a>.</p>
+
+  <aside class="sidenote"><strong>BEAM processes</strong> are not OS threads. They're ~2KB each, preemptively scheduled, and a single node can run millions of them. Each has its own heap and GC.</aside>
 
   <p><strong>2. The concurrency model is right for multi-channel agents.</strong> OpenClaw routes messages from 20+ platforms through a single Node.js event loop. The BEAM gives each session its own lightweight process, each channel its own process, each tool execution its own supervised task. Backpressure, isolation, and fault tolerance are structural. A slow LLM response on one session doesn't block tool execution on another. A crashed WhatsApp adapter doesn't take down Telegram.</p>
 
