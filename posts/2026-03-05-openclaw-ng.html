@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenClaw NG: Building on Opal — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  code {
+    font-family: inherit;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin: 1.5rem 0;
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>OpenClaw NG: The Case for Building on Opal</h1>
+  <p class="meta">Agent Architecture · March 5, 2026</p>
+
+  <div class="see-also">
+    Part 4 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a>, <a href="2026-03-05-runtime-self-modification.html">Runtime Self-Modification: Beyond TypeScript</a>, and <a href="2026-03-05-porting-openclaw-to-elixir.html">Porting OpenClaw's Core to Elixir</a>.
+  </div>
+
+  <p>This series started with a question: <a href="2026-03-05-openclaw-self-modification.html">how can an AI agent patch its own code?</a> We worked through <a href="2026-03-05-runtime-self-modification.html">why TypeScript is the wrong substrate</a> for runtime self-modification, then <a href="2026-03-05-porting-openclaw-to-elixir.html">estimated the effort</a> to port OpenClaw's core to Elixir. The conclusion was 4&ndash;6 weeks with coding agents.</p>
+
+  <p>Then we found <a href="https://github.com/matteing/opal">Opal</a>.</p>
+
+  <div class="section-header">What Opal Already Is</div>
+
+  <p>Opal is an Elixir port of the Pi coding agent &mdash; the same agent that sits at the core of OpenClaw. It's ~4,500 lines of clean OTP code with 87 test files. The architecture is not a sketch; it's a working system.</p>
+
+  <p>The agent loop is a <code>:gen_statem</code> with four explicit states: <strong>idle &rarr; running &rarr; streaming &rarr; executing_tools</strong>. Each session gets its own supervision subtree: a <code>Task.Supervisor</code> for concurrent tool execution, a <code>DynamicSupervisor</code> for sub-agents, an optional MCP supervisor, and the agent process itself. Tools implement an <code>Opal.Tool</code> behaviour. Providers implement an <code>Opal.Provider</code> behaviour. Sessions persist to DETS with branching support.</p>
+
+  <p>Here's what's already implemented:</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Agent state machine</td>
+        <td>Complete</td>
+        <td><code>:gen_statem</code>, 651 lines</td>
+      </tr>
+      <tr>
+        <td>Tool framework</td>
+        <td>Complete</td>
+        <td>10 built-in tools (read, write, edit, grep, shell, sub-agent, tasks, ask-user, skills, debug)</td>
+      </tr>
+      <tr>
+        <td>LLM streaming</td>
+        <td>Complete</td>
+        <td>Provider-agnostic SSE parsing</td>
+      </tr>
+      <tr>
+        <td>Concurrent tool execution</td>
+        <td>Complete</td>
+        <td><code>Task.Supervisor</code> with crash isolation</td>
+      </tr>
+      <tr>
+        <td>Sub-agent spawning</td>
+        <td>Complete</td>
+        <td>Depth-limited child agents</td>
+      </tr>
+      <tr>
+        <td>Session persistence</td>
+        <td>Complete</td>
+        <td>ETS + DETS with conversation branching</td>
+      </tr>
+      <tr>
+        <td>Context compaction</td>
+        <td>Complete</td>
+        <td>LLM-driven summarization at token threshold</td>
+      </tr>
+      <tr>
+        <td>Retry &amp; backoff</td>
+        <td>Complete</td>
+        <td>Classifies retryable vs. permanent errors</td>
+      </tr>
+      <tr>
+        <td>MCP integration</td>
+        <td>Complete</td>
+        <td>Tools + resources via Anubis client</td>
+      </tr>
+      <tr>
+        <td>JSON-RPC transport</td>
+        <td>Complete</td>
+        <td>Bidirectional stdio protocol</td>
+      </tr>
+      <tr>
+        <td>Supervision tree</td>
+        <td>Complete</td>
+        <td>Per-session subtree, <code>:rest_for_one</code></td>
+      </tr>
+      <tr>
+        <td>Provider abstraction</td>
+        <td>Partial</td>
+        <td>Only GitHub Copilot built-in; framework is extensible</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-header">What This Means for the Port</div>
+
+  <p>The hardest architectural decision in any Elixir port of OpenClaw is decomposing the agent loop. OpenClaw's <code>pi-embedded-runner/run.ts</code> is a single 57,000-line file containing the entire agent lifecycle: history management, tool execution, token counting, context window management, LLM invocation with retry and failover, session compaction. Porting that monolith to OTP processes &mdash; deciding which parts become GenServers, how they supervise each other, where state lives &mdash; is the kind of work that resists automation. It requires understanding both the source semantics and the target paradigm deeply enough to make structural decisions that will hold up under production load.</p>
+
+  <p>Opal has already made those decisions. And made them well.</p>
+
+  <p>The 57K-line <code>run.ts</code> becomes a 651-line <code>:gen_statem</code> plus ~850 lines of supporting modules (streaming, tool execution, compaction, overflow detection). The session lane serialization that OpenClaw builds explicitly &mdash; queuing runs per session to prevent race conditions &mdash; falls out naturally from the GenServer mailbox. One process per session, messages queue by default.</p>
+
+  <p>Mapping Opal's coverage against the four core areas we identified for porting:</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Core Area</th>
+        <th>OpenClaw Lines</th>
+        <th>Opal Coverage</th>
+        <th>Remaining Work</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Agent Loop</td>
+        <td>~12K (+ 57K <code>run.ts</code>)</td>
+        <td>~80%</td>
+        <td>Approval gates, multi-provider auth failover</td>
+      </tr>
+      <tr>
+        <td>Plugin/Skill Runtime</td>
+        <td>~5K</td>
+        <td>~30%</td>
+        <td>Plugin discovery/registry, hook lifecycle, install/update</td>
+      </tr>
+      <tr>
+        <td>Gateway Hub</td>
+        <td>~23K</td>
+        <td>~5%</td>
+        <td>WebSocket server, HTTP, routing, auth, broadcast</td>
+      </tr>
+      <tr>
+        <td>State Layer</td>
+        <td>~20K</td>
+        <td>~20%</td>
+        <td>Config schemas, secrets, memory/embeddings</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The agent loop is 80% done. That's the component our <a href="2026-03-05-porting-openclaw-to-elixir.html">previous estimate</a> said would compress the least under coding agents because of its subtle behavior. It's the component with the most room for bugs that only surface at integration time. And it's already built and tested.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Self-Modification Payoff</div>
+
+  <p>This is where the whole series converges.</p>
+
+  <p>We <a href="2026-03-05-runtime-self-modification.html">argued</a> that the BEAM gives you structural safety for runtime self-modification: process isolation contains blast radius, supervision trees provide automatic rollback, hot code swapping lets you modify behavior without dropping connections, and two-version module coexistence makes upgrades atomic. None of this is possible in TypeScript.</p>
+
+  <p>Opal makes this concrete. The agent is a <code>:gen_statem</code>. You can hot-swap its module while it's running. The <code>code_change/4</code> callback lets you migrate state between versions. If the new code crashes, the supervisor restarts the agent with the previous version. The tool executor runs in a separate <code>Task.Supervisor</code> &mdash; a bad tool can't take down the agent. Sub-agents run in their own <code>DynamicSupervisor</code> &mdash; a rogue sub-agent can't take down its parent.</p>
+
+  <p>The self-modifying agent scenario from our first post becomes tractable:</p>
+
+  <ul>
+    <li>Agent identifies a bug in its own tool execution logic</li>
+    <li>Agent generates a new version of the <code>ToolRunner</code> module</li>
+    <li>System hot-loads the new module via <code>:code.load_binary/3</code></li>
+    <li>If it crashes, supervisor restarts with the old version &mdash; automatically</li>
+    <li>If it works, the agent continues with the improved code &mdash; no restart, no lost context</li>
+  </ul>
+
+  <p>In OpenClaw's TypeScript, this same scenario requires: write to file, git branch, <code>pnpm build</code>, restart gateway, lose all active sessions. The BEAM makes self-modification a runtime operation. Opal gives us the supervision structure to make it safe.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Build Plan</div>
+
+  <p>Starting from Opal, building OpenClaw NG incrementally:</p>
+
+  <p><strong>Phase 1: Complete the agent core.</strong> Add Anthropic and OpenAI providers (implement the <code>Opal.Provider</code> behaviour, reuse the shared OpenAI helpers already in the codebase). Add approval gates to tool execution. Add auth profile failover. This gives us a fully functional multi-provider coding agent with safety controls.</p>
+
+  <p><strong>Phase 2: Add the gateway.</strong> Phoenix app wrapping Opal's agent into WebSocket channels. Each connected client gets a <code>SessionServer</code>. Implement OpenClaw's frame protocol (req/res/event JSON frames) so existing clients can connect. Binding router as pattern matching on message metadata. HTTP endpoints for health, Canvas, and the OpenAI-compatible chat completions API.</p>
+
+  <p><strong>Phase 3: Add the plugin system.</strong> Plugin discovery scanning filesystem paths. Plugin loading via <code>:code.load_binary/3</code> (replacing TypeScript's Jiti). Plugin registry in ETS. Hook lifecycle via <code>:telemetry</code>. Elixir behaviours define the plugin contract. Skills hot-reload is already in Opal.</p>
+
+  <p><strong>Phase 4: Bridge to TypeScript.</strong> The gateway exposes the same WebSocket endpoint that OpenClaw's TypeScript channel adapters already connect to. The 40+ existing adapters (WhatsApp, Telegram, Slack, Discord, Signal, etc.) connect as clients. Minimal changes on the TypeScript side &mdash; they already speak WebSocket with JSON frames.</p>
+
+  <p><strong>Phase 5: Complete the state layer.</strong> Config schema validation with NimbleOptions. Secrets module with encrypted file storage. Memory and vector embeddings via NIF or Erlang port to SQLite-vec.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Effort Estimate</div>
+
+  <p>One human architect, frontier coding agents (Opus 4.6, GPT-5.3 Codex), unlimited token budget.</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>Scope</th>
+        <th>Estimate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1. Complete agent core</td>
+        <td>Providers, approval gates, auth failover</td>
+        <td>3&ndash;4 days</td>
+      </tr>
+      <tr>
+        <td>2. Gateway</td>
+        <td>Phoenix WebSocket/HTTP, routing, auth, broadcast</td>
+        <td>5&ndash;7 days</td>
+      </tr>
+      <tr>
+        <td>3. Plugin system</td>
+        <td>Discovery, loading, registry, hooks</td>
+        <td>3&ndash;4 days</td>
+      </tr>
+      <tr>
+        <td>4. TypeScript bridge</td>
+        <td>Frame protocol compatibility, channel adapter connection</td>
+        <td>3&ndash;5 days</td>
+      </tr>
+      <tr>
+        <td>5. State layer</td>
+        <td>Config schemas, secrets, memory/embeddings</td>
+        <td>3&ndash;4 days</td>
+      </tr>
+      <tr>
+        <td>Integration &amp; testing</td>
+        <td>End-to-end validation, edge cases, load testing</td>
+        <td>5&ndash;7 days</td>
+      </tr>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td></td>
+        <td><strong>~4&ndash;5 weeks</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Compare to our previous estimates:</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Approach</th>
+        <th>Estimate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Port from scratch, humans only</td>
+        <td>3&ndash;4 months</td>
+      </tr>
+      <tr>
+        <td>Port from scratch, with coding agents</td>
+        <td>4&ndash;6 weeks</td>
+      </tr>
+      <tr>
+        <td><strong>Build on Opal, with coding agents</strong></td>
+        <td><strong>4&ndash;5 weeks</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The calendar time compression from Opal is modest &mdash; about a week &mdash; because the gateway and plugin system still need to be built regardless. But the <em>risk</em> compression is significant. The agent loop is the component most likely to harbor subtle bugs (race conditions in streaming, edge cases in compaction, tool execution ordering). Opal has 87 test files covering these paths. Starting from tested, working code for the hardest component means fewer integration surprises in weeks 3&ndash;5.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The real argument for Opal isn't time savings. It's that someone already made the hard architectural decisions correctly.</strong> The <code>:gen_statem</code> agent, the per-session supervision tree, the <code>Task.Supervisor</code> for tool isolation, the Registry-based pub/sub, the branching session model &mdash; these are exactly the choices we would have made. Starting from Opal means we're building on validated design decisions rather than re-deriving them.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">Why This Is Worth Doing</div>
+
+  <p>Three reasons.</p>
+
+  <p><strong>1. Runtime self-modification becomes a feature, not a hack.</strong> OpenClaw's TypeScript architecture requires a full build-restart cycle to change agent behavior. On the BEAM, the agent can modify its own tools, swap its own modules, and upgrade its own capabilities &mdash; all while maintaining active sessions. The supervision tree ensures that a bad modification is automatically rolled back. This is the enabling capability for the self-improving agent we described in the <a href="2026-03-05-openclaw-self-modification.html">first post</a>.</p>
+
+  <p><strong>2. The concurrency model is right for multi-channel agents.</strong> OpenClaw routes messages from 20+ platforms through a single Node.js event loop. The BEAM gives each session its own lightweight process, each channel its own process, each tool execution its own supervised task. Backpressure, isolation, and fault tolerance are structural. A slow LLM response on one session doesn't block tool execution on another. A crashed WhatsApp adapter doesn't take down Telegram.</p>
+
+  <p><strong>3. Observability is built into the runtime.</strong> Connect to a running BEAM node with <code>:observer</code> or <code>remote_console</code> and you can inspect every process, every message queue, every supervision tree, every ETS table &mdash; live, in production. No logging framework, no metrics pipeline, no APM vendor. The runtime <em>is</em> the observability platform. For an AI agent system where understanding what the agent is doing (and why) is a safety requirement, this matters.</p>
+
+  <p>OpenClaw proved the product. Opal proved the architecture. OpenClaw NG would combine both: the channel ecosystem and user-facing features of OpenClaw, running on a core that was designed from the ground up for the properties that matter most in an AI agent &mdash; fault isolation, hot upgrades, and runtime self-modification.</p>
+
+  <p>Five weeks of focused work. One architect. Unlimited tokens. The tools are all there.</p>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion · Markus Fix · 2026
+</footer>
+
+</body>
+</html>
