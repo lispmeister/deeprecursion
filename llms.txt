@@ -1,0 +1,16 @@
+# Deeprecursion
+
+> Research notes by Markus Fix. Rough consensus and running code.
+
+## Posts
+
+- [Loom: The Case for Building on Opal](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-openclaw-ng.md): An existing Elixir port of the Pi coding agent already solves the hardest architectural problem. One architect, frontier models, five weeks.
+- [Porting OpenClaw's Core to Elixir](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-porting-openclaw-to-elixir.md): A practical assessment of porting the core gateway and agent loop to Elixir, keeping the TypeScript channels, and bridging them.
+- [Runtime Self-Modification: Beyond TypeScript](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-runtime-self-modification.md): Why building a self-modifying agent in TypeScript is writing letters to your future self. Common Lisp offers depth, Elixir/BEAM offers safety.
+- [Making OpenClaw Self-Aware: How Can an AI Agent Patch Its Own Code?](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-openclaw-self-modification.md): Five approaches to giving an AI agent a coherent mental model of its own codebase.
+- [What if the LLM Thought in S-Expressions?](https://lispmeister.github.io/deeprecursion/posts/2026-02-13-sexp-native-editing.md): Designing an AST-native code editing protocol for LLMs using Lisp's homoiconicity.
+- [Lunar Habitat Life Support Systems](https://lispmeister.github.io/deeprecursion/posts/2026-02-13-lunar-life-support-systems.md): Companies, technologies, and supply chains for atmospheric control and CO₂ scrubbing in next-generation lunar stations.
+
+## Optional
+
+- [Full content of all posts](https://lispmeister.github.io/deeprecursion/llms-full.txt)

@@ -1,0 +1,682 @@
+---
+title: "Loom: The Case for Building on Opal"
+date: 2026-03-05
+meta: "Agent Architecture"
+series: "OpenClaw/Loom"
+series_part: 4
+prev: "Porting OpenClaw's Core to Elixir"
+prev_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-porting-openclaw-to-elixir.md
+url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-openclaw-ng.html
+---
+
+# Loom: The Case for Building on Opal
+
+*Agent Architecture · March 5, 2026*
+
+*Part 4 of a series. See: [Making OpenClaw Self-Aware](2026-03-05-openclaw-self-modification.md), [Runtime Self-Modification: Beyond TypeScript](2026-03-05-runtime-self-modification.md), and [Porting OpenClaw's Core to Elixir](2026-03-05-porting-openclaw-to-elixir.md).*
+
+This series started with a question: [how can an AI agent patch its own code?](2026-03-05-openclaw-self-modification.md) We worked through [why TypeScript is the wrong substrate](2026-03-05-runtime-self-modification.md) for runtime self-modification, then [estimated the effort](2026-03-05-porting-openclaw-to-elixir.md) to port OpenClaw's core to Elixir. The conclusion was 4–6 weeks with coding agents.
+
+Then we found [Opal](https://github.com/matteing/opal).
+
+## What Opal Already Is
+
+Opal is an Elixir port of the Pi coding agent — the same agent that sits at the core of OpenClaw. It's ~4,500 lines of clean OTP code with 87 test files. The architecture is not a sketch; it's a working system.
+
+The agent loop is a `:gen_statem` with four explicit states: **idle → running → streaming → executing_tools**. Each session gets its own supervision subtree: a `Task.Supervisor` for concurrent tool execution, a `DynamicSupervisor` for sub-agents, an optional MCP supervisor, and the agent process itself. Tools implement an `Opal.Tool` behaviour. Providers implement an `Opal.Provider` behaviour. Sessions persist to DETS with branching support.
+
+Here's what's already implemented:
+
+| Component | Status | Notes |
+|---|---|---|
+| Agent state machine | Complete | `:gen_statem`, 651 lines |
+| Tool framework | Complete | 10 built-in tools (read, write, edit, grep, shell, sub-agent, tasks, ask-user, skills, debug) |
+| LLM streaming | Complete | Provider-agnostic SSE parsing |
+| Concurrent tool execution | Complete | `Task.Supervisor` with crash isolation |
+| Sub-agent spawning | Complete | Depth-limited child agents |
+| Session persistence | Complete | ETS + DETS with conversation branching |
+| Context compaction | Complete | LLM-driven summarization at token threshold |
+| Retry & backoff | Complete | Classifies retryable vs. permanent errors |
+| MCP integration | Complete | Tools + resources via Anubis client |
+| JSON-RPC transport | Complete | Bidirectional stdio protocol |
+| Supervision tree | Complete | Per-session subtree, `:rest_for_one` |
+| Provider abstraction | Partial | Only GitHub Copilot built-in; framework is extensible |
+
+## What This Means for the Port
+
+The hardest architectural decision in any Elixir port of OpenClaw is decomposing the agent loop. OpenClaw's `pi-embedded-runner/run.ts` is a single 57,000-line file containing the entire agent lifecycle: history management, tool execution, token counting, context window management, LLM invocation with retry and failover, session compaction. Porting that monolith to OTP processes — deciding which parts become GenServers, how they supervise each other, where state lives — is the kind of work that resists automation. It requires understanding both the source semantics and the target paradigm deeply enough to make structural decisions that will hold up under production load.
+
+Opal has already made those decisions. And made them well.
+
+The 57K-line `run.ts` becomes a 651-line `:gen_statem` plus ~850 lines of supporting modules (streaming, tool execution, compaction, overflow detection). The session lane serialization that OpenClaw builds explicitly — queuing runs per session to prevent race conditions — falls out naturally from the GenServer mailbox. One process per session, messages queue by default.
+
+Mapping Opal's coverage against the four core areas we identified for porting:
+
+| Core Area | OpenClaw Lines | Opal Coverage | Remaining Work |
+|---|---|---|---|
+| Agent Loop | ~12K (+ 57K `run.ts`) | ~80% | Approval gates, multi-provider auth failover |
+| Plugin/Skill Runtime | ~5K | ~30% | Plugin discovery/registry, hook lifecycle, install/update |
+| Gateway Hub | ~23K | ~5% | WebSocket server, HTTP, routing, auth, broadcast |
+| State Layer | ~20K | ~20% | Config schemas, secrets, memory/embeddings |
+
+The agent loop is 80% done. That's the component our [previous estimate](2026-03-05-porting-openclaw-to-elixir.md) said would compress the least under coding agents because of its subtle behavior. It's the component with the most room for bugs that only surface at integration time. And it's already built and tested.
+
+---
+
+## The Self-Modification Payoff
+
+This is where the whole series converges.
+
+We [argued](2026-03-05-runtime-self-modification.md) that the BEAM gives you structural safety for runtime self-modification: process isolation contains blast radius, supervision trees provide automatic rollback, hot code swapping lets you modify behavior without dropping connections, and two-version module coexistence makes upgrades atomic. None of this is possible in TypeScript.
+
+Opal makes this concrete. The agent is a `:gen_statem`. You can hot-swap its module while it's running. The `code_change/4` callback lets you migrate state between versions. If the new code crashes, the supervisor restarts the agent with the previous version. The tool executor runs in a separate `Task.Supervisor` — a bad tool can't take down the agent. Sub-agents run in their own `DynamicSupervisor` — a rogue sub-agent can't take down its parent.
+
+The self-modifying agent scenario from our first post becomes tractable:
+
+- Agent identifies a bug in its own tool execution logic
+- Agent generates a new version of the `ToolRunner` module
+- System hot-loads the new module via `:code.load_binary/3`
+- If it crashes, supervisor restarts with the old version — automatically
+- If it works, the agent continues with the improved code — no restart, no lost context
+
+In OpenClaw's TypeScript, this same scenario requires: write to file, git branch, `pnpm build`, restart gateway, lose all active sessions. The BEAM makes self-modification a runtime operation. Opal gives us the supervision structure to make it safe.
+
+---
+
+## The Build Plan
+
+Starting from Opal, building Loom incrementally:
+
+**Phase 1: Complete the agent core.** Add Anthropic and OpenAI providers (implement the `Opal.Provider` behaviour, reuse the shared OpenAI helpers already in the codebase). Add approval gates to tool execution. Add auth profile failover. This gives us a fully functional multi-provider coding agent with safety controls.
+
+**Phase 2: Add the gateway.** Phoenix app wrapping Opal's agent into WebSocket channels. Each connected client gets a `SessionServer`. Implement OpenClaw's frame protocol (req/res/event JSON frames) so existing clients can connect. Binding router as pattern matching on message metadata. HTTP endpoints for health, Canvas, and the OpenAI-compatible chat completions API.
+
+**Phase 3: Add the plugin system.** Plugin discovery scanning filesystem paths. Plugin loading via `:code.load_binary/3` (replacing TypeScript's Jiti). Plugin registry in ETS. Hook lifecycle via `:telemetry`. Elixir behaviours define the plugin contract. Skills hot-reload is already in Opal.
+
+**Phase 4: Bridge to TypeScript.** The gateway exposes the same WebSocket endpoint that OpenClaw's TypeScript channel adapters already connect to. The 40+ existing adapters (WhatsApp, Telegram, Slack, Discord, Signal, etc.) connect as clients. Minimal changes on the TypeScript side — they already speak WebSocket with JSON frames.
+
+**Phase 5: Complete the state layer.** Config schema validation with NimbleOptions. Secrets module with encrypted file storage. Memory and vector embeddings via NIF or Erlang port to SQLite-vec.
+
+---
+
+## Effort Estimate
+
+One human architect, frontier coding agents (Opus 4.6, GPT-5.3 Codex), unlimited token budget.
+
+| Phase | Scope | Estimate |
+|---|---|---|
+| 1. Complete agent core | Providers, approval gates, auth failover | 3–4 days |
+| 2. Gateway | Phoenix WebSocket/HTTP, routing, auth, broadcast | 5–7 days |
+| 3. Plugin system | Discovery, loading, registry, hooks | 3–4 days |
+| 4. TypeScript bridge | Frame protocol compatibility, channel adapter connection | 3–5 days |
+| 5. State layer | Config schemas, secrets, memory/embeddings | 3–4 days |
+| Integration & testing | End-to-end validation, edge cases, load testing | 5–7 days |
+| **Total** | | **~4–5 weeks** |
+
+Compare to our previous estimates:
+
+| Approach | Estimate |
+|---|---|
+| Port from scratch, humans only | 3–4 months |
+| Port from scratch, with coding agents | 4–6 weeks |
+| **Build on Opal, with coding agents** | **4–5 weeks** |
+
+The calendar time compression from Opal is modest — about a week — because the gateway and plugin system still need to be built regardless. But the *risk* compression is significant. The agent loop is the component most likely to harbor subtle bugs (race conditions in streaming, edge cases in compaction, tool execution ordering). Opal has 87 test files covering these paths. Starting from tested, working code for the hardest component means fewer integration surprises in weeks 3–5.
+
+> **The real argument for Opal isn't time savings. It's that someone already made the hard architectural decisions correctly.** The `:gen_statem` agent, the per-session supervision tree, the `Task.Supervisor` for tool isolation, the Registry-based pub/sub, the branching session model — these are exactly the choices we would have made. Starting from Opal means we're building on validated design decisions rather than re-deriving them.
+
+---
+
+## Why This Is Worth Doing
+
+Three reasons.
+
+**1. Runtime self-modification becomes a feature, not a hack.** OpenClaw's TypeScript architecture requires a full build-restart cycle to change agent behavior. On the BEAM, the agent can modify its own tools, swap its own modules, and upgrade its own capabilities — all while maintaining active sessions. The supervision tree ensures that a bad modification is automatically rolled back. This is the enabling capability for the self-improving agent we described in the [first post](2026-03-05-openclaw-self-modification.md).
+
+**2. The concurrency model is right for multi-channel agents.** OpenClaw routes messages from 20+ platforms through a single Node.js event loop. The BEAM gives each session its own lightweight process, each channel its own process, each tool execution its own supervised task. Backpressure, isolation, and fault tolerance are structural. A slow LLM response on one session doesn't block tool execution on another. A crashed WhatsApp adapter doesn't take down Telegram.
+
+**3. Observability is built into the runtime.** Connect to a running BEAM node with `:observer` or `remote_console` and you can inspect every process, every message queue, every supervision tree, every ETS table — live, in production. No logging framework, no metrics pipeline, no APM vendor. The runtime *is* the observability platform. For an AI agent system where understanding what the agent is doing (and why) is a safety requirement, this matters.
+
+OpenClaw proved the product. Opal proved the architecture. Loom would combine both: the channel ecosystem and user-facing features of OpenClaw, running on a core that was designed from the ground up for the properties that matter most in an AI agent — fault isolation, hot upgrades, and runtime self-modification. The name fits: a loom runs on a beam, and weaves new patterns at runtime.
+
+Five weeks of focused work. One architect. Unlimited tokens. The tools are all there.
+
+
+---
+
+
+---
+title: "Porting OpenClaw's Core to Elixir"
+date: 2026-03-05
+meta: "Agent Architecture"
+series: "OpenClaw/Loom"
+series_part: 3
+prev: "Runtime Self-Modification: Beyond TypeScript"
+prev_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-runtime-self-modification.md
+next: "Loom: The Case for Building on Opal"
+next_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-openclaw-ng.md
+url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-porting-openclaw-to-elixir.html
+---
+
+# Porting OpenClaw's Core to Elixir
+
+*Agent Architecture · March 5, 2026*
+
+*Part 3 of a series. See: [Making OpenClaw Self-Aware](2026-03-05-openclaw-self-modification.md) and [Runtime Self-Modification: Beyond TypeScript](2026-03-05-runtime-self-modification.md).*
+
+The [previous post](2026-03-05-runtime-self-modification.md) argued that building a self-modifying agent in TypeScript is a fundamental mismatch — the language treats runtime code modification as an error condition. Elixir/BEAM treats it as a design requirement. So what would it actually take to port [OpenClaw](https://docs.openclaw.ai) to Elixir?
+
+We looked at the codebase. Here's what we found.
+
+## What We're Looking At
+
+OpenClaw is ~470K lines of TypeScript across 2,712 source files. It's a monorepo containing a core gateway, 40+ channel extensions (Telegram, Slack, Discord, WhatsApp, Signal, Matrix, and more), 54+ skills, native apps, and a web UI. The architecture is a WebSocket/HTTP hub that routes messages between messaging platforms and an LLM agent loop, with a plugin system for dynamic skill and tool registration. State is file-based JSON plus SQLite-vec for vector embeddings.
+
+## The Strategy: Port the Core, Keep the Rest
+
+Porting all 40+ channel adapters to Elixir would mean rewriting SDKs that only exist in the Node ecosystem. That's pointless work. The right move: port only the core to Elixir, keep the existing TypeScript channels, skills, and UI, and bridge them.
+
+**What moves to Elixir:**
+
+- **Gateway hub** — message routing, connection management → Phoenix Channels + OTP supervisors
+- **Agent loop** — LLM invocation, tool execution, approval workflows, context management → GenServer per session
+- **Plugin/skill runtime** — discovery, loading, hook lifecycle, tool registration → behaviours + dynamic module loading
+- **State layer** — config, sessions, auth profiles → ETS/GenServer with file persistence
+
+**What stays in TypeScript:**
+
+- All 40+ channel adapters
+- All 54+ skills
+- Native apps and web UI
+
+**The bridge:** The channel plugins already speak WebSocket to the gateway. The Elixir core exposes the same local WebSocket endpoint, existing TypeScript plugins connect as clients. Minimal changes on the TS side.
+
+## What You Get
+
+The whole point is that OTP gives you for free what OpenClaw hand-builds in TypeScript:
+
+- **Hot code swapping** — modify the agent loop at runtime, no restart, no dropped connections
+- **Process isolation** — a buggy skill or compromised agent session can't take down the gateway
+- **Supervision trees** — automatic recovery from failures, with rollback to previous module versions
+- **Distribution** — multi-node agent clusters via `Node.connect/1`, no infrastructure changes
+- **Two-version coexistence** — old and new code run simultaneously during upgrades
+
+The self-modification problem from the first post becomes tractable: the agent proposes a module change, the supervisor hot-loads it, and if it crashes, rolls back automatically. No git branches, no rebuild, no restart.
+
+---
+
+## Effort Estimate: Humans Only
+
+| Component | Estimate |
+|---|---|
+| Core gateway + routing | 3–4 weeks |
+| Agent loop + tool execution | 4–6 weeks |
+| Plugin/skill runtime | 2–3 weeks |
+| State management | 1–2 weeks |
+| Node bridge layer | 2–3 weeks |
+| Integration + testing | 2–3 weeks |
+| **Total** | **3–4 person-months** |
+
+## Effort Estimate: With Coding Agents
+
+Assume access to the latest coding agents (Opus 4.6, GPT-5.3 Codex) with unlimited token budget. Agents compress the *typing* time dramatically but don't eliminate the *thinking* time.
+
+**What agents handle well:** translating well-understood TypeScript patterns to idiomatic Elixir, writing the bridge protocol, state management boilerplate, test generation and porting.
+
+**What still needs a human architect:**
+
+- **Supervision tree design** — which processes supervise which, restart strategies, how agent sessions map to process lifecycles. 2–3 days of thinking.
+- **Bridge contract** — where the boundary sits between Elixir and TypeScript, what crosses the wire. 1–2 days.
+- **Hot code swapping semantics** — which modules are hot-swappable, how `code_change/3` handles state migration. This is the whole reason for the port. 2–3 days of design.
+- **Integration debugging** — when the Elixir core and Node sidecar disagree about message format or sequencing.
+
+| Component | Humans only | With agents |
+|---|---|---|
+| Core gateway + routing | 3–4 weeks | 4–5 days |
+| Agent loop + tool execution | 4–6 weeks | 1–2 weeks |
+| Plugin/skill runtime | 2–3 weeks | 3–4 days |
+| State management | 1–2 weeks | 2–3 days |
+| Node bridge layer | 2–3 weeks | 3–5 days |
+| Integration + testing | 2–3 weeks | 1–2 weeks |
+| **Total** | **3–4 months** | **4–6 weeks** |
+
+The agent loop is the component that doesn't compress as much — it has the most subtle behavior (context window management, tool approval chains, LLM response streaming) and the most room for bugs that only surface at integration time.
+
+> **The real bottleneck becomes review.** With unlimited tokens, agents can produce the entire Elixir codebase in a week. But someone needs to verify the supervision tree is right, the failure modes are handled, and the hot-swap paths actually work. That review and iteration is ~60% of the remaining calendar time. One human architect plus agents: ~5–6 weeks wall clock.
+
+*Continue reading: [Loom: The Case for Building on Opal](2026-03-05-openclaw-ng.md)*
+
+
+---
+
+
+---
+title: "Runtime Self-Modification: Beyond TypeScript"
+date: 2026-03-05
+meta: "Agent Architecture"
+series: "OpenClaw/Loom"
+series_part: 2
+prev: "Making OpenClaw Self-Aware"
+prev_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-openclaw-self-modification.md
+next: "Porting OpenClaw's Core to Elixir"
+next_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-porting-openclaw-to-elixir.md
+url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-runtime-self-modification.html
+---
+
+# Runtime Self-Modification: Beyond TypeScript
+
+*Agent Architecture · March 5, 2026*
+
+*Continues from: [Making OpenClaw Self-Aware: How Can an AI Agent Patch Its Own Code?](2026-03-05-openclaw-self-modification.md)*
+
+The [previous post](2026-03-05-openclaw-self-modification.md) explored five approaches to making OpenClaw — a TypeScript agent system — aware of and capable of modifying its own code. But every one of those approaches dances around a fundamental problem: the entire "self-patch workflow" with git branches, `pnpm build`, and restart cycles exists because TypeScript is a dead language at runtime. You compile it, run the artifact, and if you want to change behavior you stop, recompile, and start again.
+
+The agent's "self-awareness" is mediated by the filesystem and build toolchain — it's not modifying *itself*, it's modifying source files that will later become a new version of itself. That's not self-modification. That's writing a letter to your future self.
+
+So: what if the runtime *is* the development environment?
+
+---
+
+## Common Lisp: The Radical Answer
+
+The Lisp image model collapses the distinction between "source code," "running program," and "development environment" into a single thing. A running Lisp image contains all its own source as manipulable data structures. `DEFUN` at the REPL doesn't write to a file and rebuild — it compiles a function and installs it into the running image immediately. CLOS generic functions can be redefined, and existing instances pick up the new behavior. The condition/restart system means that when something goes wrong during self-modification, the system doesn't crash — it *pauses at the error* and offers structured recovery options. An agent could literally catch its own modification errors and try a different patch.
+
+The connection to the [s-expressions post](2026-02-13-sexp-native-editing.md) isn't accidental. If the agent's code is s-expressions, then generating code and generating data are the same operation. The agent doesn't produce a text diff and hope it parses — it produces a list, and that list *is* the code. `(defun handle-message (msg) ...)` is simultaneously a data structure the agent can inspect and transform, and the actual function definition. Homoiconicity isn't a curiosity here; it's the enabling property.
+
+Concretely: the five approaches from the previous post collapse into one. There's no "source-aware workspace skill" vs. "self-patch workflow" vs. "dev agent" — the running system *is* its own source, and modification is just calling `COMPILE` and `LOAD` on new forms. You'd `SAVE-LISP-AND-DIE` to snapshot the image (including all modifications) and restart from there. The entire git-branch-PR-merge-rebuild cycle becomes: evaluate a form, observe the result, keep or undo.
+
+The security problem also becomes clearer and more honest. In TypeScript, "the merge step is manual" creates the *illusion* of safety, but the agent already has `exec` and filesystem write — the gate is social, not technical. In Lisp, you'd use the package system to make core modules read-only, restrict which symbols the agent can `FMAKUNBOUND` or redefine, and use a sandboxed package for agent-modifiable code. The blast radius is explicit and enforced by the language, not by hoping the agent respects your git workflow.
+
+---
+
+## Elixir/BEAM: The Pragmatic Answer
+
+The BEAM VM was built for systems that modify themselves without stopping. Erlang's hot code swapping isn't a hack — it's a design requirement from telecom, where "restart to deploy" means dropped calls. Two versions of a module coexist simultaneously during an upgrade: existing processes finish their current call on the old code, new calls dispatch to the new version. The `code_change/3` callback in GenServers lets you migrate process state between versions. This is exactly what a self-modifying agent needs: change behavior without losing context.
+
+But the real win is the supervision tree. The previous post's "Dev Agent" pattern — a second agent that modifies the first — maps directly onto OTP's architecture. Each agent capability is a GenServer process. The supervisor monitors them. If a self-modified module crashes, the supervisor restarts it — and can fall back to the previous module version. This is the "human gating" from the previous post, but *automated and structural*. You don't need a human to review every patch if the system can safely try the patch, detect failure, and roll back.
+
+Process isolation is the other key property. On the BEAM, processes share nothing — no memory, no state. A compromised or buggy self-modified process can't corrupt other processes. The prompt injection scenario from the previous post ("a WhatsApp message becomes a persistent backdoor") is contained: even if an agent process is tricked into modifying its own module, other processes running different modules are unaffected, and the supervisor can kill and restart the compromised process.
+
+Distribution is built in. The "dev agent on a separate node" pattern is literally `Node.connect(:'dev@host')` and you're done. The dev agent compiles a module on its node, sends the binary to the primary node, and the primary loads it — all within the language, no git, no filesystem, no build step.
+
+`Code.compile_string/1` and `:code.load_binary/3` give you runtime compilation. An agent can generate Elixir source as a string, compile it to BEAM bytecode, and load it — all in the running system. Pattern matching on messages gives you a clean, verifiable interface for agent communication that's much harder to accidentally break than a JSON API.
+
+---
+
+## The Honest Tradeoff
+
+Common Lisp gives you *deeper* self-modification. The Meta-Object Protocol lets you change how the object system itself works. Macros let you extend the language. The image model means the system's entire state — including all modifications — is one serializable artifact. For an AI agent that needs to reason about and transform its own code as data, nothing else comes close.
+
+Elixir gives you *safer* self-modification. Isolation, supervision, hot swapping, and rollback are structural, not opt-in. You don't need discipline or conventions to prevent a bad patch from taking down the system — the runtime enforces it. For a production system where self-modification is a feature, not an experiment, the BEAM's "let it crash" philosophy is exactly right.
+
+> **The hybrid approach:** Use Elixir for the infrastructure — supervision, distribution, message routing, fault tolerance — and embed a Lisp (or a Lisp-like DSL) as the agent's reasoning and self-modification layer. The agent thinks in s-expressions, generates code as data, and the BEAM keeps it from killing itself in the process.
+
+The TypeScript approach from the previous post isn't wrong. It's just building a self-modifying system out of a language that treats self-modification as an error condition. That's the fundamental mismatch.
+
+*Continue reading: [Porting OpenClaw's Core to Elixir](2026-03-05-porting-openclaw-to-elixir.md)*
+
+
+---
+
+
+---
+title: "Making OpenClaw Self-Aware: How Can an AI Agent Patch Its Own Code?"
+date: 2026-03-05
+meta: "Agent Architecture"
+series: "OpenClaw/Loom"
+series_part: 1
+next: "Runtime Self-Modification: Beyond TypeScript"
+next_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-runtime-self-modification.md
+url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-openclaw-self-modification.html
+---
+
+# Making OpenClaw Self-Aware: How Can an AI Agent Patch Its Own Code?
+
+*Agent Architecture · March 5, 2026*
+
+## The Question
+
+We are working with an installation of [OpenClaw](https://docs.openclaw.ai) and now we are trying to figure out how the system can be made self-aware. How can the system manage its own code? How can we deploy from the local checkout of the GitHub repository but have the OpenClaw system itself — as in the LLM it uses to interact with the user — have enough awareness so it can patch its own code?
+
+---
+
+## The Core Tension
+
+OpenClaw already has a partial answer to this. The system supports self-modification at the agent layer — skills, config, memory — but it does not autonomously rewrite its own core algorithms or model weights in a robust, closed-loop way. The question is how to bridge that gap specifically for a local checkout: making the agent aware that it *is* OpenClaw, that its source lives at a known path, and that it can propose or apply patches to itself.
+
+## What's Already There
+
+OpenClaw's skill system gives you the building blocks. Skills are loaded from multiple locations with a precedence chain: workspace skills (highest), then managed/local (`~/.openclaw/skills`), then bundled (lowest). The agent already has tools for filesystem read/write, shell execution, and `apply_patch`. There are even community skills like `self-improving-agent` that log learnings and track errors in the workspace.
+
+But these operate at the *periphery* — modifying skills, config files, and memory docs. They don't touch the gateway's TypeScript source itself.
+
+## Approaches to True Code Self-Awareness
+
+Here's how to think about layering this, from safest to most ambitious:
+
+### 1. Source-Aware Workspace Skill (Low Risk, High Value)
+
+Write a custom skill that gives the agent a mental model of the codebase. Point it at your local checkout (say `~/projects/openclaw`) and teach it the repo layout, build system (`pnpm build`), and how to run the dev loop (`pnpm gateway:watch`). The skill's SKILL.md would include directory structure, key modules, and the convention for making changes. The agent doesn't need full repo context in every turn — it just needs to know *where to look* and *how to build/test*.
+
+The key insight: you don't inject the whole codebase into context. You give the agent a map and the tools to navigate it selectively (read specific files, grep for patterns, run tests).
+
+### 2. A "Self-Patch" Workflow with Human Gating
+
+This is probably the sweet spot. The flow would be:
+
+- Agent identifies a bug or desired improvement (from conversation, error logs, or a cron-triggered diagnostic)
+- Agent reads relevant source files from the local checkout
+- Agent generates a patch (using `apply_patch` or writing a git diff)
+- Agent commits to a branch (not main) and optionally opens a PR or just notifies you
+- You review and merge
+- Agent runs `pnpm build` and restarts the gateway (or you do via `openclaw update`)
+
+This keeps humans in the loop for the dangerous part (merging to the running branch) while letting the agent do all the analytical and generative work. You'd implement this as a workspace skill that has access to `exec` and knows the git workflow.
+
+### 3. Config-Schema-Aware Self-Tuning
+
+OpenClaw's release notes mention that agents should call `config.schema` before config edits to avoid guessing. This is already a form of self-awareness — the agent can introspect its own configuration schema, understand what knobs exist, and turn them. For a local checkout, you could extend this pattern: have the agent read its own `package.json`, its skill manifest, its tool policies, and reason about what capabilities it has vs. what it needs.
+
+### 4. The "Dev Agent" Pattern — A Second Agent That Works on the First
+
+Rather than having the running OpenClaw instance modify itself directly (which creates obvious bootstrapping and stability issues), spin up a second agent workspace dedicated to development. This dev agent:
+
+- Has the repo checkout as its workspace
+- Receives bug reports and feature requests forwarded from the primary agent
+- Can run the test suite, lint, type-check (`pnpm tsc --noEmit`)
+- Produces PRs against the local repo
+- The primary agent monitors the merge and triggers its own restart
+
+This separation of concerns is important. Without strong separation between task context and self-modification context, prompt injection becomes equivalent to arbitrary code and policy injection. A dedicated dev agent with its own workspace and session isolation keeps the blast radius manageable.
+
+### 5. Closed-Loop with Diagnostics (Most Ambitious)
+
+Wire the agent's error logs and gateway diagnostics back into its context. OpenClaw already has `openclaw doctor` for surfacing misconfigurations. You could build a cron skill that periodically runs diagnostics, collects gateway logs, and feeds them to the agent with the prompt: "Here are your recent errors. Your source is at `~/projects/openclaw`. Diagnose and propose a fix." Combined with approach #2's human-gated merge, this creates a genuine feedback loop: the system observes its own failures, reasons about its own code, and proposes fixes.
+
+---
+
+## Practical Implementation Sketch
+
+For a concrete starting point, a workspace skill structure like this:
+
+```
+~/.openclaw/skills/self-dev/
+├── SKILL.md          # Instructions for code navigation, build, test, patch workflow
+└── scripts/
+    ├── read-source.sh    # Safely cat files from the checkout
+    ├── run-tests.sh      # pnpm build && pnpm tsc --noEmit
+    └── propose-patch.sh  # git checkout -b fix/..., apply patch, commit
+```
+
+The SKILL.md would teach the agent: here's where your own source lives, here's how the gateway architecture works (entry points, plugin system, message routing), here's the build/test cycle, and here's the safe workflow for proposing changes (branch, never force-push to main, always run type-check before committing).
+
+---
+
+## The Security Reality
+
+Security researchers have noted that OpenClaw typically runs with substantial OS and network permissions, and a compromised self-improvement loop can alter allowlists and denylists for shell commands. If the agent can write to its own source and trigger rebuilds, a prompt injection from any input channel (a WhatsApp message, an email it's processing) could theoretically become a persistent backdoor. So whatever you build, **keep the merge step manual** — or at minimum behind a separate authentication gate that can't be triggered from within the agent's normal message-handling context.
+
+---
+
+## Bottom Line
+
+The tools are all there. OpenClaw gives you filesystem access, shell execution, skills, and multi-agent routing. The missing piece is a well-structured skill that provides the agent with a coherent mental model of its own codebase and a safe workflow for acting on it. Start with the source-aware skill + human-gated patches, and iterate from there.
+
+*Continue reading: [Runtime Self-Modification: Beyond TypeScript](2026-03-05-runtime-self-modification.md)*
+
+
+---
+
+
+---
+title: "What if the LLM Thought in S-Expressions?"
+date: 2026-02-13
+meta: "Responding to Can Bölük's 'The Harness Problem'"
+url: https://lispmeister.github.io/deeprecursion/posts/2026-02-13-sexp-native-editing.html
+---
+
+# What if the LLM *Thought* in S-Expressions?
+
+*February 13, 2026 · Responding to [Can Bölük's "The Harness Problem"](https://blog.can.ac/2026/02/12/the-harness-problem/)*
+
+## The Thesis
+
+Bölük's hashline insight is that **the model doesn't need to reproduce content to prove it knows what it's editing** — a 2-char hash is enough. Brilliant. But it still operates in line-space. Code isn't lines. Code is a tree. What if we went further?
+
+In Lisp, **the syntax *is* the AST**. There is no lossy parse step, no formatting to preserve, no ambiguity between the concrete and abstract tree. The parentheses aren't syntax sugar — they're structure made visible. This means an LLM that "reads" Lisp is *already reading a serialized AST*. It just doesn't know it.
+
+So the question becomes: what if we made it know?
+
+### The key realization
+
+Hashline gives each *line* an identity. But lines are arbitrary. A function might span 1 line or 40. What we really want is to give each **semantic node** an identity. In Lisp, every parenthesized form is a node. So we can do something no other language allows cleanly:
+
+**What the programmer writes:**
+
+```lisp
+(defn factorial [n]
+  (if (<= n 1)
+    1
+    (* n (factorial (dec n)))))
+```
+
+**What the model sees:**
+
+```lisp
+§a(defn factorial [n]
+  §b(if §c(<= n 1)
+    1
+    §d(* n §e(factorial §f(dec n)))))
+```
+
+Each `§`-prefixed tag is a **content-addressed node ID** — a short hash of the s-expression rooted at that paren. Not a line number. Not a character offset. A *semantic address*. The model doesn't point at "line 3" — it points at `§c`, which *means* `(<= n 1)` regardless of how the code is formatted or where it appears in the file.
+
+> **The difference:**
+> Hashline: "replace line 2, hash f1" → fragile to reformatting, insertion, reordering.
+> S-expr node IDs: "replace §c" → stable across all formatting, movement, refactoring. The identity travels with the semantics.
+
+## The Protocol
+
+### Edit primitives
+
+The model gets exactly four operations. No diffs. No string matching. No patches. Each operation is itself an s-expression — the model never leaves its native syntax:
+
+```lisp
+;; Replace a node's content entirely
+(replace! §c (zero? n))
+
+;; Wrap a node inside a new form
+(wrap! §d (when (pos? n) ◊))  ; ◊ = the original node
+
+;; Insert a sibling before/after a node
+(insert-after! §c (println "base case hit"))
+
+;; Delete a node
+(delete! §e)
+```
+
+Notice what's *absent*. No line numbers. No character ranges. No reproduction of the old content. No whitespace. The model says *what* to change and *what to change it to*. The harness handles *where* and *how*.
+
+### Why this is structurally superior to hashline
+
+- **Anchor granularity:** Node (vs. line for hashline, string for str_replace)
+- **Content reproduction:** Zero — model never re-states old code
+- **Stale edit detection:** Exact — hash is the node, not a line approximation
+- **Reorder-safe:** Yes — moving code doesn't invalidate IDs
+
+But here's the deeper insight. **Composability.** Because each edit is itself an s-expression, edits compose naturally. You can nest them, sequence them, even write macros over them:
+
+```lisp
+(do
+  (replace! §c (zero? n))
+  (wrap! §a
+    (defn factorial [n]
+      (assert (nat-int? n) "n must be natural")
+      ◊)))
+
+;; This atomically: fixes the base case AND wraps the body in a guard.
+;; The harness validates both node IDs before applying either change.
+```
+
+### The radical extension: edits as data
+
+Because edits are s-expressions, they're **first-class data**. The harness can quote them, store them, invert them, diff them, and even ask the model to *review its own pending edits as code*. A refactoring plan isn't a blob of text — it's a program that transforms programs.
+
+```lisp
+;; Harness: "Here is your proposed edit. Confirm or revise."
+(let [edit (replace! §c (zero? n))]
+  (preview edit)        ;; → shows before/after in context
+  (inverse edit)        ;; → (replace! §c' (<= n 1))
+  (conflicts? edit)     ;; → nil
+  (apply! edit))        ;; → commit
+```
+
+## Verdict
+
+### So would this beat hashline?
+
+**Under idealized conditions — single homoiconic language, no formatting concerns — yes, unambiguously.**
+
+Hashline solves the *identification* problem but still operates in line-space, which is a **lossy projection** of semantic structure. A single logical change might span multiple lines or only part of a line. Lines shift when you add code above. A reformatter invalidates every hash in the file.
+
+S-expression node addressing solves identification at the *correct* level of abstraction: the semantic unit. A node ID refers to a specific subexpression regardless of where it is in the file, how it's indented, or what's around it. The identity is *intrinsic* to the content, not to its position.
+
+### The deeper argument: cognitive alignment
+
+When an LLM reads Lisp, every token is *already* a tree operation: an open paren pushes a frame, a close paren pops one. The model's internal representation of Lisp code likely resembles an AST more than its representation of Python or JavaScript, because **the syntax forces tree-shaped attention patterns**.
+
+By making the edit language also be s-expressions, you eliminate every representation conversion. Code is trees. Edits are trees. The model's cognition is trees. **Zero impedance mismatch** at any layer.
+
+### The honest caveat
+
+This is a **beautiful impossibility as a general solution**. You can't rewrite the world in Lisp. Bölük's hashline wins precisely because it works on *any text file in any language* with zero setup.
+
+The interesting middle ground: use tree-sitter to give *any* language pseudo-homoiconic node IDs. You'd get most of the benefits — semantic anchoring, reorder stability, no content reproduction — without requiring Lisp. The formatting round-trip problem remains, but only for the *inserted* code, not for the targeting mechanism.
+
+> **The real takeaway:**
+> The closer the edit interface matches the model's internal representation of code, the fewer mechanical failures you get. Hashline moves from strings to lines. S-expr addressing moves from lines to semantic nodes. The ideal — which tree-sitter approximates for all languages — is editing at the *meaning* level, with the harness handling everything below.
+
+
+---
+
+
+---
+title: "Lunar Habitat Life Support Systems"
+date: 2026-02-13
+meta: "Atmospheric Control & CO₂ Scrubbing"
+url: https://lispmeister.github.io/deeprecursion/posts/2026-02-13-lunar-life-support-systems.html
+---
+
+# Lunar Habitat Life Support Systems
+
+*Atmospheric Control & CO₂ Scrubbing · February 2026*
+
+> **Executive Summary:** The race to establish permanent human presence on the Moon is driving a generational shift in Environmental Control and Life Support Systems (ECLSS). While the ISS has served as the proving ground for current-generation CO₂ removal technology — primarily zeolite-based adsorption systems like the CDRA — the demands of lunar surface habitats are fundamentally different: higher crew counts, longer durations, no easy resupply, the need for gravity-compatible systems, and extreme thermal environments.
+
+## Current State: ISS Heritage Systems
+
+### Carbon Dioxide Removal Assembly (CDRA)
+
+The CDRA, built by Honeywell Aerospace, has been the primary CO₂ removal system for the U.S. segment of the ISS since February 2001. It operates as a dual-bed, zeolite-based temperature-swing adsorption (TSA) system. Two sets of desiccant/adsorbent bed pairs alternate between adsorbing CO₂ from cabin air and desorbing it into space vacuum. The system supports a crew of up to six at approximately 0.4% CO₂ concentration.
+
+The CDRA has suffered from persistent reliability issues — most notably zeolite pellet dust contaminating downstream components, degraded seals, and filter clogging — making it a high-maintenance system requiring regular crew intervention. ACE Clearwater Enterprises has manufactured replacement inner chambers, end caps, and specialized filters for the CDRA in partnership with Honeywell and NASA.
+
+### The 4-Bed CO₂ Scrubber (4BCO₂)
+
+The 4BCO₂ is NASA Marshall Space Flight Center's evolution of the CDRA, developed with collaboration from NASA Johnson. It incorporates lessons from CDRA's failure modes: cylindrical beds replace rectangular ones, redesigned heater cores eliminate void spaces, new dust filters capture sorbent particles, and improved valves extend operating lifetimes. The sorbent selection process evaluated BASF 13X and Grace MS544 C 13X zeolites, both proven robust under humid and dry conditions. The goal is continuous, failure-free operation for nearly 20,000 hours.
+
+---
+
+## Top Companies Working on Next-Generation Systems
+
+### Honeywell Aerospace
+
+*Industry leader and legacy provider of ISS CDRA systems; developer of next-generation CDRILS technology*
+
+Honeywell is developing the **Carbon Dioxide Removal by Ionic Liquid Sorbent (CDRILS)** system, which represents a paradigm shift from solid sorbent to liquid absorbent CO₂ removal. CDRILS uses an ionic liquid mixture containing 1-ethyl-3-methylimidazolium acetate (EMIM[Ac]) with hollow fiber membrane contactors for continuous CO₂ absorption and desorption. A flight demonstration on the ISS is targeted for 2028.
+
+**Key advantages over CDRA:**
+
+- Continuous flow processing (no batch cycling between beds)
+- Can maintain CO₂ partial pressure below 2 mmHg — half that of CDRA
+- Eliminates the need for a CO₂ compressor and accumulator (saving 291.1 kg of equivalent system mass)
+- Can also handle humidity control and significant trace contaminant removal
+- Lower volume, mass, power, and cooling requirements
+
+### Paragon Space Development Corporation
+
+*ECLSS designer for NASA Lunar Gateway HALO module; specialist in life support, thermal control, and ISRU*
+
+Paragon is responsible for the design and implementation of the HALO (Habitation and Logistics Outpost) ECLSS for the Lunar Gateway, under a ~$100M subcontract from Northrop Grumman (awarded May 2021). The HALO ECLSS maintains safe levels of oxygen, CO₂, humidity, and trace contaminants for visiting crew during stays of up to 90 days.
+
+**Key technologies:**
+
+- **Ionomer-membrane Water Processing (IWP)** — used on Boeing's CST-100 Starliner for humidity control with no moving parts
+- **Brine Processor Assembly (BPA)** — launched to ISS in February 2021, increasing water loop closure from 93% to over 98%
+- **Primary Urine Processor (PUP)** — designed to replace two ISS systems with one compact unit
+- **Atmospheric Monitoring System (AMS)** — detects harmful gases with integrated microgravity smoke detection
+
+### Collins Aerospace (RTX Corporation)
+
+*ECLSS provider for commercial orbital habitats; legacy Apollo and ISS spacesuit life support*
+
+Collins Aerospace was awarded a $2.6M contract in 2021 for ECLSS supporting a privately owned orbital outpost in LEO. Their offering includes air revitalization and pressure control (cabin fans, heat exchangers, CO₂ removal, trace contaminant control, valves, regulators, smoke detection) and active thermal control. Collins also provides the Sabatier CO₂ reduction system currently operational on the ISS.
+
+### Precision Combustion, Inc. (PCI)
+
+*Sabatier reactor specialist; catalytic systems for CO₂ conversion*
+
+PCI has developed a compact 4-crew Sabatier reactor that integrates directly with Honeywell's CDRILS system, converting captured CO₂ and hydrogen into water and methane. The reactor's waste heat is repurposed to heat the ionic liquid in the CDRILS system, saving approximately 72.5–145 W. PCI is a key member of the Honeywell-led Commercial ECLSS team.
+
+### Thales Alenia Space
+
+*Prime contractor for ESA's Lunar I-Hab module and Italy's Lunar Multi-Purpose Habitat*
+
+Thales Alenia Space in Turin is building the primary structure for the Lunar I-Hab module (launching on Artemis IV circa 2028), with JAXA providing the ECLSS, batteries, and thermal control. The I-Hab provides approximately 10 m³ of habitable volume for up to four astronauts for 30–90 day stays.
+
+### Airbus Defence and Space
+
+*ECLSS design for Starlab commercial space station; ISS Columbus module heritage*
+
+Airbus is providing technical design and engineering for the Starlab station's ECLSS, which leverages over 30 years of NASA and ESA investment in life support and thermal control. The station targets a loop closure greater than 90%, with a continuous crew of four (up to eight temporarily) in a 450 m³ pressurized volume. Launch planned on SpaceX's Starship in 2028–2029.
+
+### Vast (Haven Stations)
+
+*In-house ECLSS development for commercial space stations with iterative approach*
+
+Vast is developing its own life support systems in-house at its Long Beach headquarters. Haven-1 (expected Q1 2027 launch) uses a simple open-loop ECLSS architecture suited to short-duration crewed missions. However, Vast is flying closed-loop ECLSS experiments on every Haven-1 mission to enable rapid iteration. The company expects to be on a 5th-generation ECLSS system by the time Haven-2 launches to support continuous human presence.
+
+---
+
+## CO₂ Capture Technologies: Comparative Analysis
+
+| Technology | TRL | Crew Scale | Power (4-crew) | Consumables | Lunar Suitability |
+|---|---|---|---|---|---|
+| **CDRA (Zeolite TSA)** | 9 (operational) | 4–6 | ~500W | Zeolite replacement | Moderate — proven but high maintenance |
+| **4BCO₂ (Improved Zeolite)** | 7–8 | 4–6 | ~400W | Improved zeolites | Moderate — addresses CDRA failure modes |
+| **CDRILS (Ionic Liquid)** | 5–6 | 4 (prototype) | ~300W est. | IL replenishment (~2yr) | High — continuous flow, low maintenance |
+| **CDep (Cryogenic)** | 4–5 | 4 (full-scale ground) | ~130W (deposition) | None | Very High — leverages lunar cold |
+| **Vozdukh (Amine TSA)** | 9 (operational) | 6 | ~400W | Amine replacement | Moderate — degradation concerns |
+| **BLSS (Bioregenerative)** | 3–4 | 4 (ground demo) | High (lighting) | Biological inputs | Future — 2040s for operational systems |
+
+---
+
+## China's Yuegong-1: The Large-Scale Demonstrator
+
+The most advanced large-scale life support demonstration belongs to China. The **Yuegong-1 (Lunar Palace 1)** at Beihang University in Beijing is a 500 m³, 160 m² bioregenerative life support system (BLSS) that successfully sustained a crew of four for 370 days in 2017–2018 — the world record for the longest stay in a self-contained laboratory.
+
+Yuegong-1 demonstrated 100% atmospheric regeneration through plants and microalgae, with 55% food self-sufficiency. The facility includes two plant cultivation cabins (58 m²), a living area (42 m²) with bedrooms, dining room, bathroom, and waste disposal. A critical August 2025 paper in *npj Microgravity* warns that NASA has fallen behind China in bioregenerative life support capabilities.
+
+---
+
+## Key Observations
+
+> **No one is building a lunar-base-scale ECLSS today.** All current programs — Gateway HALO, Lunar I-Hab, Artemis Surface Habitat — are designed for 4 crew for 30–90 day stays. True settlement-scale life support (8–12+ crew, continuous habitation for months or years) remains a paper exercise outside of China's Yuegong program.
+
+> **CDep is the most promising breakthrough for lunar surface application.** The ability to leverage the Moon's cold environment (permanently shadowed craters near the south pole reach approximately 40K) for radiative cooling could dramatically reduce the power requirements of cryogenic CO₂ capture, potentially making CDep more efficient on the lunar surface than in LEO.
+
+> **The CDRILS ISS flight demo in 2028 is a pivotal milestone.** If it succeeds, it could become the baseline air revitalization technology for all post-ISS crewed habitats, displacing zeolite-based systems.
+
+> **The commercial space station race is driving ECLSS innovation faster than government programs.** Vast, Starlab, Orbital Reef, and Axiom are all investing in ECLSS as a competitive differentiator, with NASA's 2030 ISS retirement deadline creating urgency. These LEO systems will inform the technology baseline for lunar surface habitats.
+
+*Sources: NASA Technical Reports Server, International Conference on Environmental Systems (ICES) proceedings 2018–2025, Honeywell Aerospace, Paragon Space Development Corporation, ESA, npj Microgravity (August 2025), Tech Briefs, SpaceNews, Aerospace America (July 2025).*
