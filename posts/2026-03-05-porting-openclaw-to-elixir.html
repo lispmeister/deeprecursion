@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Porting OpenClaw's Core to Elixir — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>Porting OpenClaw's Core to Elixir</h1>
+  <p class="meta">Agent Architecture · March 5, 2026</p>
+
+  <div class="see-also">
+    Part 3 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a> and <a href="2026-03-05-runtime-self-modification.html">Runtime Self-Modification: Beyond TypeScript</a>.
+  </div>
+
+  <p>The <a href="2026-03-05-runtime-self-modification.html">previous post</a> argued that building a self-modifying agent in TypeScript is a fundamental mismatch — the language treats runtime code modification as an error condition. Elixir/BEAM treats it as a design requirement. So what would it actually take to port <a href="https://docs.openclaw.ai">OpenClaw</a> to Elixir?</p>
+
+  <p>We looked at the codebase. Here's what we found.</p>
+
+  <div class="section-header">What We're Looking At</div>
+
+  <p>OpenClaw is ~470K lines of TypeScript across 2,712 source files. It's a monorepo containing a core gateway, 40+ channel extensions (Telegram, Slack, Discord, WhatsApp, Signal, Matrix, and more), 54+ skills, native apps, and a web UI. The architecture is a WebSocket/HTTP hub that routes messages between messaging platforms and an LLM agent loop, with a plugin system for dynamic skill and tool registration. State is file-based JSON plus SQLite-vec for vector embeddings.</p>
+
+  <div class="section-header">The Strategy: Port the Core, Keep the Rest</div>
+
+  <p>Porting all 40+ channel adapters to Elixir would mean rewriting SDKs that only exist in the Node ecosystem. That's pointless work. The right move: port only the core to Elixir, keep the existing TypeScript channels, skills, and UI, and bridge them.</p>
+
+  <p><strong>What moves to Elixir:</strong></p>
+  <ul>
+    <li><strong>Gateway hub</strong> — message routing, connection management → Phoenix Channels + OTP supervisors</li>
+    <li><strong>Agent loop</strong> — LLM invocation, tool execution, approval workflows, context management → GenServer per session</li>
+    <li><strong>Plugin/skill runtime</strong> — discovery, loading, hook lifecycle, tool registration → behaviours + dynamic module loading</li>
+    <li><strong>State layer</strong> — config, sessions, auth profiles → ETS/GenServer with file persistence</li>
+  </ul>
+
+  <p><strong>What stays in TypeScript:</strong></p>
+  <ul>
+    <li>All 40+ channel adapters</li>
+    <li>All 54+ skills</li>
+    <li>Native apps and web UI</li>
+  </ul>
+
+  <p><strong>The bridge:</strong> The channel plugins already speak WebSocket to the gateway. The Elixir core exposes the same local WebSocket endpoint, existing TypeScript plugins connect as clients. Minimal changes on the TS side.</p>
+
+  <div class="section-header">What You Get</div>
+
+  <p>The whole point is that OTP gives you for free what OpenClaw hand-builds in TypeScript:</p>
+
+  <ul>
+    <li><strong>Hot code swapping</strong> — modify the agent loop at runtime, no restart, no dropped connections</li>
+    <li><strong>Process isolation</strong> — a buggy skill or compromised agent session can't take down the gateway</li>
+    <li><strong>Supervision trees</strong> — automatic recovery from failures, with rollback to previous module versions</li>
+    <li><strong>Distribution</strong> — multi-node agent clusters via <code>Node.connect/1</code>, no infrastructure changes</li>
+    <li><strong>Two-version coexistence</strong> — old and new code run simultaneously during upgrades</li>
+  </ul>
+
+  <p>The self-modification problem from the first post becomes tractable: the agent proposes a module change, the supervisor hot-loads it, and if it crashes, rolls back automatically. No git branches, no rebuild, no restart.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Effort Estimate: Humans Only</div>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>Estimate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Core gateway + routing</td>
+        <td>3–4 weeks</td>
+      </tr>
+      <tr>
+        <td>Agent loop + tool execution</td>
+        <td>4–6 weeks</td>
+      </tr>
+      <tr>
+        <td>Plugin/skill runtime</td>
+        <td>2–3 weeks</td>
+      </tr>
+      <tr>
+        <td>State management</td>
+        <td>1–2 weeks</td>
+      </tr>
+      <tr>
+        <td>Node bridge layer</td>
+        <td>2–3 weeks</td>
+      </tr>
+      <tr>
+        <td>Integration + testing</td>
+        <td>2–3 weeks</td>
+      </tr>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td><strong>3–4 person-months</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-header">Effort Estimate: With Coding Agents</div>
+
+  <p>Assume access to the latest coding agents (Opus 4.6, GPT-5.3 Codex) with unlimited token budget. Agents compress the <em>typing</em> time dramatically but don't eliminate the <em>thinking</em> time.</p>
+
+  <p><strong>What agents handle well:</strong> translating well-understood TypeScript patterns to idiomatic Elixir, writing the bridge protocol, state management boilerplate, test generation and porting.</p>
+
+  <p><strong>What still needs a human architect:</strong></p>
+
+  <ul>
+    <li><strong>Supervision tree design</strong> — which processes supervise which, restart strategies, how agent sessions map to process lifecycles. 2–3 days of thinking.</li>
+    <li><strong>Bridge contract</strong> — where the boundary sits between Elixir and TypeScript, what crosses the wire. 1–2 days.</li>
+    <li><strong>Hot code swapping semantics</strong> — which modules are hot-swappable, how <code>code_change/3</code> handles state migration. This is the whole reason for the port. 2–3 days of design.</li>
+    <li><strong>Integration debugging</strong> — when the Elixir core and Node sidecar disagree about message format or sequencing.</li>
+  </ul>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>Humans only</th>
+        <th>With agents</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Core gateway + routing</td>
+        <td>3–4 weeks</td>
+        <td>4–5 days</td>
+      </tr>
+      <tr>
+        <td>Agent loop + tool execution</td>
+        <td>4–6 weeks</td>
+        <td>1–2 weeks</td>
+      </tr>
+      <tr>
+        <td>Plugin/skill runtime</td>
+        <td>2–3 weeks</td>
+        <td>3–4 days</td>
+      </tr>
+      <tr>
+        <td>State management</td>
+        <td>1–2 weeks</td>
+        <td>2–3 days</td>
+      </tr>
+      <tr>
+        <td>Node bridge layer</td>
+        <td>2–3 weeks</td>
+        <td>3–5 days</td>
+      </tr>
+      <tr>
+        <td>Integration + testing</td>
+        <td>2–3 weeks</td>
+        <td>1–2 weeks</td>
+      </tr>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td><strong>3–4 months</strong></td>
+        <td><strong>4–6 weeks</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The agent loop is the component that doesn't compress as much — it has the most subtle behavior (context window management, tool approval chains, LLM response streaming) and the most room for bugs that only surface at integration time.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The real bottleneck becomes review.</strong> With unlimited tokens, agents can produce the entire Elixir codebase in a week. But someone needs to verify the supervision tree is right, the failure modes are handled, and the hot-swap paths actually work. That review and iteration is ~60% of the remaining calendar time. One human architect plus agents: ~5–6 weeks wall clock.</p>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion · Markus Fix · 2026
+</footer>
+
+</body>
+</html>
