@@ -75,7 +75,11 @@ Which organ first? Memory. It's OpenClaw's main bottleneck.
 
 The LLMs have no memory of their own. Context is a sliding window. When it fills up, OpenClaw triggers a "memory flush" — a panicked silent turn where the LLM dumps facts to markdown files before they're lost. Retrieval is semantic search over chunks in SQLite. There are no consistency guarantees. Nothing prevents contradictions. Nothing tracks staleness.
 
-A Lean memory service fixes this with types. Four kinds of memory, four sets of invariants:
+We don't need to build a search engine in a theorem prover. [QMD](https://github.com/tobi/qmd) — a local-first memory engine by Tobi Lütke — already solves the hard retrieval problem: hybrid search (BM25 + vector + LLM reranking), chunking, contextual retrieval, and an MCP server for agentic integration. What QMD doesn't do is enforce semantic invariants on what goes in and what comes out. That's where Lean fits.
+
+QMD is the muscle. Lean is the skeleton. The Lean scaffold sits in front of QMD as a typed API layer, classifying incoming facts, enforcing invariants, and exposing a verified interface to the agent. QMD handles embedding, chunking, and retrieval. Lean handles correctness.
+
+Four kinds of memory, four sets of invariants:
 
 **User preferences.** "Always use metric units." Stable, accumulate slowly, newer overrides older. Invariant: *preferences are totally ordered by timestamp; a query always returns the most recent value for a given key.*
 
@@ -85,19 +89,21 @@ A Lean memory service fixes this with types. Four kinds of memory, four sets of 
 
 **World state.** "The server runs Ubuntu 22.04." Factual, can become stale. Invariant: *every world-state fact has a timestamp and a staleness bound; queries return both the fact and its freshness; expired facts are flagged, not silently served.*
 
-In Lean, these invariants aren't comments or runtime assertions. They're part of the type signature. A function that stores a world-state fact without a staleness bound won't compile. A function that modifies an episodic memory won't compile. The guarantees are structural.
+QMD covers the first two well out of the box — timestamped documents, append-only collections, and hybrid retrieval are its sweet spot. Learned procedures need version tracking that QMD doesn't provide internally. World state needs staleness bounds that QMD doesn't enforce. The Lean scaffold fills these gaps: it maintains version chains for procedures (with QMD storing each version as a document), rejects mutations of episodic records (allowing only superseding corrections), and attaches staleness policies to world-state facts.
 
-The interface: the Lean memory service connects to OpenClaw's gateway as a WebSocket Node, registers three tools (`memory_store`, `memory_query`, `memory_reflect`), and replaces the current markdown-and-SQLite approach. The agent commits facts to verified storage continuously — so when context compaction happens, nothing important is lost. The panic flush becomes unnecessary.
+In Lean, the invariants aren't comments or runtime assertions. They're part of the type signature. A function that stores a world-state fact without a staleness bound won't compile. A function that modifies an episodic memory won't compile. The guarantees are structural.
+
+The interface: the Lean scaffold exposes three tools (`memory_store`, `memory_query`, `memory_reflect`) as an MCP server. The agent talks to the Lean scaffold; the Lean scaffold talks to QMD. The agent commits facts to verified storage continuously — so when context compaction happens, nothing important is lost. The panic flush becomes unnecessary.
 
 ---
 
 ## What's Hard About This
 
-The gap between "specify the memory types" and "build the sidecar" is where this proposal succeeds or fails. Lean 4 is a wonderful language. It is also a language with practical constraints we shouldn't paper over:
+QMD eliminates the biggest concern from the original proposal — we're not building search infrastructure in a theorem prover. But real challenges remain:
 
-**Small ecosystem.** Lean's community is oriented toward mathematics and formal verification, not systems programming. There are no production WebSocket libraries. No battle-tested JSON parsers for gateway protocol frames. Building the sidecar means writing or binding this infrastructure from scratch.
+**The write-path question.** The Lean scaffold can sit in front of QMD, enforcing invariants at the API layer. But if anything bypasses the scaffold and writes directly to QMD's SQLite store, the Lean types are circumvented. Do we trust the scaffold as the only write path (simpler, realistic today)? Or does Lean need to own the storage layer, using QMD only for indexing and retrieval (stronger guarantees, more plumbing)? This is a meaningful architectural decision that determines how much the type system actually protects.
 
-**FFI overhead.** Lean compiles to C, and C FFI exists, but it's not the smooth interop story you get with Elixir's NIFs or Python's ctypes. Connecting to OpenClaw's WebSocket gateway, handling streaming, and maintaining persistent state is non-trivial Lean engineering.
+**FFI surface.** The interface between Lean and QMD is small — maybe five or six functions via QMD's CLI, MCP server, or direct SQLite access. That's a tractable boundary. But Lean 4's FFI story for calling external processes or HTTP endpoints is still maturing. The cleanest path is probably Lean shelling out to `qmd` as a subprocess, which is simple but means the scaffold can't enforce invariants at the storage layer.
 
 **Compile times.** The autoresearch loop needs fast iteration — modify, compile, evaluate, keep/revert. If Lean's type checker takes minutes to verify a modification, the improvement loop slows to a crawl. Compile time is a hard constraint on how fast the agent can self-improve.
 
@@ -115,7 +121,7 @@ Every post in this series has been forward-looking. Here's where it might fall a
 
 **LLM-generated Lean is syntactically valid but semantically meaningless.** The improvement loop depends on LLMs proposing modifications in Lean. A modification can type-check — satisfy all the invariants — while doing nothing useful. Imagine a memory query function that always returns empty results. It type-checks. It preserves every invariant. It's worthless. The type system catches safety violations; it doesn't catch vacuous implementations. The empirical evaluation must catch these, and that brings back all the noise and ambiguity of measuring "usefulness."
 
-**The sidecar never reaches parity.** OpenClaw's markdown-and-SQLite memory is crude but functional. Users have built workflows around it. The Lean replacement needs to be not just *provably correct* but *practically better* on day one — faster retrieval, fewer lost facts, better staleness handling. If the first version is correct but slow, or correct but missing features users depend on, it won't survive contact with real usage.
+**The scaffold adds overhead without visible benefit.** QMD alone — without the Lean scaffold — is already a major upgrade over OpenClaw's markdown-and-SQLite memory. If the Lean layer adds latency to every memory operation but the invariants rarely catch real problems in practice, users will route around the scaffold and talk to QMD directly. The verified layer must be fast enough to be invisible and useful enough to justify its existence.
 
 **The bootstrap stalls at Phase 1.** The memory organ works but nothing else moves to Lean. The sidecar remains a sidecar. OpenClaw keeps evolving, the bridge keeps breaking, and the Lean component becomes maintenance overhead rather than a foundation. This is the most likely failure mode: not catastrophic failure, but the quiet death of an integration that costs more to maintain than it saves.
 
@@ -125,11 +131,11 @@ Every post in this series has been forward-looking. Here's where it might fall a
 
 The next move isn't another post. It's the memory service.
 
-1. **Specify the memory types in Lean.** Define the four memory kinds, their invariants, and the store/query/reflect interface. Small enough to write by hand. This is where we discover whether the invariants are too rigid for real conversation.
-2. **Build the sidecar.** A Lean binary that connects to OpenClaw's gateway via WebSocket, registers memory tools, and serves verified memory operations. This is where we discover whether Lean's ecosystem is ready for systems work.
-3. **Run it.** Replace OpenClaw's memory with the Lean service on a real instance. Measure: fewer contradictions, better retrieval, no panic flushes. This is where we discover whether verified memory is *practically better*, not just *provably correct*.
+1. **Specify the memory types in Lean.** Define the four memory kinds, their invariants, and the store/query/reflect interface. The core types — `MemoryEntry`, `MemoryKind`, `StalenessPolicy`, `VersionChain` — plus the store/query/reflect functions and their proofs. Maybe 1,000–2,000 lines. This is where we discover whether the invariants are too rigid for real conversation.
+2. **Build the scaffold.** A Lean binary that wraps QMD's MCP server, enforces the four memory-type invariants, and exposes the three-tool interface as its own MCP server. The agent talks to the Lean scaffold; the scaffold talks to QMD. This is where we discover whether the FFI boundary is tractable.
+3. **Run it.** Replace OpenClaw's memory with the Lean+QMD stack on a real instance. Measure: fewer contradictions, better retrieval, no panic flushes, no visible latency overhead. This is where we discover whether verified memory is *practically better*, not just *provably correct*.
 4. **Start the improvement loop.** The agent observes its own memory performance, proposes modifications to its memory strategies (not the invariants — those are fixed), and keeps what works. This is where we discover whether the autoresearch pattern works for agent self-improvement.
 
-Each step is a falsifiable experiment. If step 1 reveals that the invariants don't fit real conversation, we revise the types. If step 2 reveals that Lean can't handle the systems work, we reconsider the substrate. If step 3 shows no practical improvement over SQLite, we stop.
+Each step is a falsifiable experiment. If step 1 reveals that the invariants don't fit real conversation, we revise the types. If step 2 reveals that the Lean-QMD boundary adds too much overhead, we simplify the scaffold. If step 3 shows no practical improvement, we stop. A prototype is realistic in one to two weeks.
 
 One working organ is worth more than this entire series. Ship it, measure it, keep or revert.
