@@ -4,6 +4,7 @@
 
 ## Posts
 
+- [The Autoresearch Pattern: A Blueprint for Self-Improving Agents](https://lispmeister.github.io/deeprecursion/posts/2026-03-11-self-improving-agents.md): Karpathy's autoresearch reveals the structure that makes self-improvement work: three separations (judge, subject, process), a keep/revert loop, and well-chosen fixed points.
 - [Loom: The Case for Building on Opal](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-loom.md): An existing Elixir port of the Pi coding agent already solves the hardest architectural problem. One architect, frontier models, five weeks.
 - [Porting OpenClaw's Core to Elixir](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-porting-openclaw-to-elixir.md): A practical assessment of porting the core gateway and agent loop to Elixir, keeping the TypeScript channels, and bridging them.
 - [Runtime Self-Modification: Beyond TypeScript](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-runtime-self-modification.md): Why building a self-modifying agent in TypeScript is writing letters to your future self. Common Lisp offers depth, Elixir/BEAM offers safety.

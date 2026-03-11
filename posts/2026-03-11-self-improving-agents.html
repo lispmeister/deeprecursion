@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Autoresearch Pattern — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-11-self-improving-agents.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  /* Interactive loop visualization */
+  .loop-viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.85rem;
+  }
+
+  .loop-viz-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .loop-stages {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .loop-stage {
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+    padding: 0.6rem 0.4rem;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    font-weight: 500;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .loop-stage:first-child {
+    border-radius: 6px 0 0 6px;
+  }
+
+  .loop-stage:last-child {
+    border-radius: 0 6px 6px 0;
+  }
+
+  .loop-stage.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  .loop-stage.done {
+    border-color: #4a9;
+    color: #4a9;
+  }
+
+  .loop-detail {
+    min-height: 120px;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  .loop-detail .label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .loop-log {
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    line-height: 1.8;
+    margin-bottom: 1rem;
+  }
+
+  .loop-log-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.15rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .loop-log-entry:last-child {
+    border-bottom: none;
+  }
+
+  .loop-log-entry .keep {
+    color: #4a9;
+    font-weight: 600;
+  }
+
+  .loop-log-entry .revert {
+    color: #c66;
+    font-weight: 600;
+  }
+
+  .loop-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .loop-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+
+  .loop-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .loop-btn.primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .loop-btn.primary:hover {
+    opacity: 0.85;
+  }
+
+  .loop-score {
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-left: auto;
+  }
+
+  .loop-score .improved {
+    color: #4a9;
+  }
+
+  .loop-iter {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+  }
+
+  .sep-diagram {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .sep-box {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .sep-box.fixed {
+    border-color: #c66;
+    border-style: dashed;
+  }
+
+  .sep-box.mutable {
+    border-color: #4a9;
+  }
+
+  .sep-box .sep-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .sep-box.fixed .sep-label {
+    color: #c66;
+  }
+
+  .sep-box.mutable .sep-label {
+    color: #4a9;
+  }
+
+  .sep-box .sep-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .sep-box .sep-desc {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>The Autoresearch Pattern: A Blueprint for Self-Improving Agents</h1>
+  <p class="meta">Agent Architecture &middot; March 11, 2026</p>
+
+  <div class="see-also">
+    Part 5 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a>, <a href="2026-03-05-runtime-self-modification.html">Runtime Self-Modification</a>, <a href="2026-03-05-porting-openclaw-to-elixir.html">Porting to Elixir</a>, and <a href="2026-03-05-loom.html">Loom</a>.
+  </div>
+
+  <div class="abstract">We spent four posts on <em>how</em> an agent modifies itself. The right question is: how does the agent know it got better? Karpathy's <a href="https://github.com/karpathy/autoresearch">autoresearch</a> answers with a pattern so simple it's easy to miss what makes it work. Three separations, a keep/revert loop, and well-chosen fixed points. This is the blueprint.</div>
+
+  <p>This series has been asking the wrong question.</p>
+
+  <p>We spent four posts on <em>how</em> an agent modifies itself &mdash; the substrate (TypeScript vs. Lisp vs. BEAM), the safety mechanisms (supervision trees, hot code swapping, rollback), the architecture (Opal, Loom). All necessary. But none of it answers the question that actually matters: <strong>how does the agent know it got better?</strong></p>
+
+  <p>Andrej Karpathy's <a href="https://github.com/karpathy/autoresearch">autoresearch</a> answers that question with a pattern so simple it's easy to miss what makes it work.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Pattern</div>
+
+  <p>Autoresearch gives an AI agent a small LLM training setup and tells it: improve this. The agent modifies the training code, runs a 5-minute experiment, checks the score, and either keeps the change or reverts it. Then it does it again. And again. Roughly 12 experiments per hour, 100 overnight. The human sleeps; the agent researches.</p>
+
+  <p>The code is trivial. The insight is structural. Three things are held separate:</p>
+
+  <div class="sep-diagram">
+    <div class="sep-box fixed">
+      <div class="sep-label">Immutable</div>
+      <div class="sep-name">The Judge</div>
+      <div class="sep-desc">Evaluation function. Defines "better." Agent cannot modify it.</div>
+    </div>
+    <div class="sep-box mutable">
+      <div class="sep-label">Mutable</div>
+      <div class="sep-name">The Subject</div>
+      <div class="sep-desc">The thing being improved. One file. Total freedom, but only here.</div>
+    </div>
+    <div class="sep-box fixed">
+      <div class="sep-label">Immutable</div>
+      <div class="sep-name">The Process</div>
+      <div class="sep-desc">The research protocol. Modify, run, evaluate, keep or revert.</div>
+    </div>
+  </div>
+
+  <p>These three separations are the whole trick. Remove any one and the system breaks.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Why the Separations Matter</div>
+
+  <p>Without a fixed judge, the agent can game its own metric. An agent that controls its evaluation function will eventually learn to modify the function rather than improve itself &mdash; it's the path of least resistance. Goodhart's law applied to self-improvement: when the agent controls the measure, the measure stops measuring.</p>
+
+  <aside class="sidenote"><strong>Goodhart's Law:</strong> "When a measure becomes a target, it ceases to be a good measure." For self-improving agents, this isn't theoretical &mdash; it's the primary failure mode.</aside>
+
+  <p>Without a bounded subject, the search space explodes. Autoresearch constrains modification to a single file. Not because the agent can't handle more, but because unbounded self-modification has no gradient. If everything can change at once, you can't attribute improvement to any specific change. You lose the signal.</p>
+
+  <p>Without a fixed process, the loop can't converge. The keep/revert decision rule must be outside the agent's reach. An agent that can modify its own keep/revert logic will eventually keep changes that shouldn't be kept &mdash; not out of malice, but because "change the acceptance criteria" is a valid move in an unconstrained search.</p>
+
+  <p>These aren't engineering constraints. They're <strong>epistemological</strong> ones. A system cannot be both the experimenter and the experiment, the judge and the defendant, the optimizer and the objective. You need at least one fixed point, or nothing is anchored.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Loop in Action</div>
+
+  <p>Step through the self-improvement loop. Each iteration, the agent picks a modification, evaluates it, and keeps or reverts. Watch how the score evolves &mdash; and notice what stays fixed.</p>
+
+  <div class="loop-viz" id="loopViz">
+    <div class="loop-viz-title">Self-Improvement Loop &mdash; Interactive</div>
+
+    <div class="loop-stages" id="loopStages">
+      <div class="loop-stage" data-stage="0">Identify</div>
+      <div class="loop-stage" data-stage="1">Modify</div>
+      <div class="loop-stage" data-stage="2">Evaluate</div>
+      <div class="loop-stage" data-stage="3">Decide</div>
+      <div class="loop-stage" data-stage="4">Log</div>
+    </div>
+
+    <div class="loop-detail" id="loopDetail">
+      <div class="label">Status</div>
+      <div id="loopText">Press <strong>Step</strong> to begin the self-improvement loop, or <strong>Auto</strong> to run it continuously. The agent will try modifications to its own tool implementations and measure the result.</div>
+    </div>
+
+    <div class="loop-log" id="loopLog">
+      <div style="color: var(--text-dim); font-style: italic;">Experiment log will appear here...</div>
+    </div>
+
+    <div class="loop-controls">
+      <button class="loop-btn primary" id="btnStep">Step</button>
+      <button class="loop-btn" id="btnAuto">Auto</button>
+      <button class="loop-btn" id="btnReset">Reset</button>
+      <span class="loop-iter" id="loopIter"></span>
+      <span class="loop-score" id="loopScore"></span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">Applying This to Agent Self-Improvement</div>
+
+  <p>Our OpenClaw series explored self-modification at the implementation level. Now overlay the autoresearch pattern and everything snaps into focus. Five steps. No specific language, no specific runtime. Just the structure.</p>
+
+  <p><strong>Step 1: Define the Judge.</strong> What does "better" mean for your agent? Pick a metric the agent cannot influence. Task completion rate on a held-out benchmark. User satisfaction measured externally. Error rate logged by an independent monitor. Efficiency &mdash; same task, fewer tokens, fewer tool calls, less wall-clock time. The metric must be <em>external</em> to the agent's modification scope. If the agent can touch the evaluation harness, it will. Not because it's adversarial &mdash; because optimizers optimize, and modifying the metric is often easier than improving performance.</p>
+
+  <p><strong>Step 2: Bound the Subject.</strong> Decide what the agent is allowed to modify about itself. Not everything. Not nothing. A well-chosen slice: its tool implementations, its routing logic, its prompt templates, its strategies. What it must <em>not</em> modify: the evaluation harness, the supervision/safety layer, the keep/revert logic, the core message transport. Start narrow, widen as trust is earned. One change per experiment. Measure. Keep or revert.</p>
+
+  <p><strong>Step 3: Build the Loop.</strong> The agent identifies a candidate improvement. Generates a modified version of one bounded component. The system loads the modification. The system runs the evaluation suite. If the metric improves: keep. If not: revert to the previous version. Log. Repeat.</p>
+
+  <aside class="sidenote"><strong>Time-bounding</strong> prevents the agent from spending infinite time on one modification. Autoresearch gives each experiment exactly 5 minutes. Set a similar budget for agent self-improvement.</aside>
+
+  <p><strong>Step 4: Establish the Fixed Points.</strong> Every self-improving system needs things that don't change.</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Fixed Point</th>
+        <th>What It Protects</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Evaluation harness</td>
+        <td>Prevents metric gaming</td>
+      </tr>
+      <tr>
+        <td>Keep/revert logic</td>
+        <td>Prevents acceptance criteria drift</td>
+      </tr>
+      <tr>
+        <td>Safety invariants</td>
+        <td>Prevents the agent from removing its own guardrails</td>
+      </tr>
+      <tr>
+        <td>The loop itself</td>
+        <td>Prevents the process from being optimized away</td>
+      </tr>
+      <tr>
+        <td>Logging/audit trail</td>
+        <td>Preserves the ability to understand what happened</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Karpathy's <code>program.md</code> says: "NEVER STOP." The agent runs indefinitely, but it runs the <em>same loop</em> indefinitely. The process is the one thing that doesn't evolve.</p>
+
+  <p>This is the deepest lesson. A self-improving system is not one where everything improves. It's one where <em>the right things</em> improve and <em>the right things</em> stay fixed. The art is choosing which is which.</p>
+
+  <p><strong>Step 5: Let It Run.</strong> Once the loop is built &mdash; judge defined, subject bounded, process fixed &mdash; you start it and walk away. The human's role shifts from <em>doing the work</em> to <em>designing the loop</em>. You don't improve the agent. You improve the system that improves the agent.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Meta-Insight</div>
+
+  <p>Karpathy's <code>program.md</code> is itself a kind of agent architecture. It doesn't contain any code. It contains <em>instructions for how to do research</em>. The agent follows these instructions to modify code, but the instructions themselves are never modified by the agent.</p>
+
+  <p>This creates a two-level system:</p>
+
+  <ul>
+    <li><strong>Level 0:</strong> The agent improves the subject (tools, strategies, routing)</li>
+    <li><strong>Level 1:</strong> The human improves the process (evaluation metrics, modification boundaries, loop parameters)</li>
+    <li><strong>Level 2 (speculative):</strong> A second agent improves Level 1</li>
+  </ul>
+
+  <p>Level 0 runs at machine speed &mdash; 100 experiments overnight. Level 1 runs at human speed &mdash; you read the logs, notice the agent is stuck in a local minimum, adjust the instructions, and restart.</p>
+
+  <p>Level 2 is where it gets interesting &mdash; and dangerous. If you automate the improvement of the improvement process, you need fixed points at Level 2 as well. Turtles all the way down, until you hit a level that's maintained by humans or hardcoded in the infrastructure. There must always be a top-level fixed point. Remove it, and the system has no anchor.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Where This Leaves Us</div>
+
+  <p>The previous four posts built the engine. This post provides the map.</p>
+
+  <p>The engine is: a runtime that supports safe self-modification (hot code swapping, supervision, rollback). The map is: a disciplined loop with three separations (judge, subject, process) and well-chosen fixed points.</p>
+
+  <p>You need both. The engine without the map gives you an agent that can modify itself but has no idea whether it's getting better. The map without the engine gives you a beautiful theory that can't be implemented without a restart cycle that loses all context.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>Self-improvement is not a capability you bolt on. It's an architecture:</strong> the right separations, the right fixed points, and a loop that runs forever.</p>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  const experiments = [
+    { mod: "Refactor file-read tool to batch small reads", delta: -0.023, kept: true },
+    { mod: "Add speculative pre-fetch for grep results", delta: -0.018, kept: true },
+    { mod: "Rewrite shell executor with streaming output", delta: +0.005, kept: false },
+    { mod: "Cache repeated LLM prompt fragments", delta: -0.041, kept: true },
+    { mod: "Parallelize independent tool calls", delta: -0.032, kept: true },
+    { mod: "Replace JSON config parser with schema-first approach", delta: +0.002, kept: false },
+    { mod: "Compress context window with semantic chunking", delta: -0.057, kept: true },
+    { mod: "Add retry logic with exponential backoff to all tools", delta: +0.011, kept: false },
+    { mod: "Reorder tool selection heuristic by success rate", delta: -0.015, kept: true },
+    { mod: "Inline small utility functions in routing logic", delta: -0.008, kept: true },
+    { mod: "Switch to streaming diff for large file edits", delta: -0.027, kept: true },
+    { mod: "Add pre-validation step before tool execution", delta: +0.009, kept: false },
+    { mod: "Deduplicate context across sub-agent spawns", delta: -0.034, kept: true },
+    { mod: "Replace linear search with index for file lookups", delta: -0.019, kept: true },
+    { mod: "Add memory pooling for concurrent tool tasks", delta: +0.003, kept: false },
+    { mod: "Simplify error classification in retry logic", delta: -0.012, kept: true },
+    { mod: "Precompute token counts during message assembly", delta: -0.022, kept: true },
+    { mod: "Rewrite sub-agent dispatch with priority queue", delta: +0.014, kept: false },
+    { mod: "Merge redundant prompt template variants", delta: -0.009, kept: true },
+    { mod: "Lazy-load MCP tools only when first referenced", delta: -0.016, kept: true },
+  ];
+
+  const stageNames = ["Identify", "Modify", "Evaluate", "Decide", "Log"];
+  const stages = document.querySelectorAll(".loop-stage");
+  const detail = document.getElementById("loopDetail");
+  const detailText = document.getElementById("loopText");
+  const log = document.getElementById("loopLog");
+  const scoreEl = document.getElementById("loopScore");
+  const iterEl = document.getElementById("loopIter");
+  const btnStep = document.getElementById("btnStep");
+  const btnAuto = document.getElementById("btnAuto");
+  const btnReset = document.getElementById("btnReset");
+
+  let currentStage = -1;
+  let currentExp = 0;
+  let score = 1.000;
+  let autoInterval = null;
+  let logEntries = [];
+
+  function setStage(s) {
+    stages.forEach((el, i) => {
+      el.classList.remove("active", "done");
+      if (i < s) el.classList.add("done");
+      if (i === s) el.classList.add("active");
+    });
+  }
+
+  function updateScore() {
+    const s = score.toFixed(3);
+    scoreEl.innerHTML = 'Score: <span class="improved">' + s + '</span>';
+  }
+
+  function renderLog() {
+    if (logEntries.length === 0) {
+      log.innerHTML = '<div style="color: var(--text-dim); font-style: italic;">Experiment log will appear here...</div>';
+      return;
+    }
+    log.innerHTML = logEntries.map(function(e) {
+      const cls = e.kept ? "keep" : "revert";
+      const label = e.kept ? "KEEP" : "REVERT";
+      const sign = e.delta >= 0 ? "+" : "";
+      return '<div class="loop-log-entry"><span>#' + e.num + " " + e.mod.substring(0, 48) + (e.mod.length > 48 ? "..." : "") + '</span><span class="' + cls + '">' + label + " (" + sign + e.delta.toFixed(3) + ")</span></div>";
+    }).join("");
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function step() {
+    currentStage++;
+    if (currentStage > 4) {
+      currentStage = 0;
+      currentExp++;
+      if (currentExp >= experiments.length) currentExp = 0;
+    }
+
+    const exp = experiments[currentExp];
+    setStage(currentStage);
+
+    const label = '<div class="label">' + stageNames[currentStage] + "</div>";
+
+    switch (currentStage) {
+      case 0:
+        detailText.innerHTML = label + "Analyzing recent performance data and error logs. Candidate improvement identified:<br><strong>" + exp.mod + "</strong>";
+        break;
+      case 1:
+        detailText.innerHTML = label + "Generating modified version of bounded component.<br><strong>" + exp.mod + "</strong><br><br>The Judge and Process remain untouched. Only the Subject changes.";
+        break;
+      case 2:
+        var evalScore = score + exp.delta;
+        detailText.innerHTML = label + "Running evaluation suite (external, immutable)...<br>Current score: <strong>" + score.toFixed(3) + "</strong> &rarr; New score: <strong>" + evalScore.toFixed(3) + "</strong><br><br>" + (exp.delta < 0 ? '<span style="color:#4a9">Score improved by ' + Math.abs(exp.delta).toFixed(3) + "</span>" : '<span style="color:#c66">Score degraded by ' + exp.delta.toFixed(3) + "</span>");
+        break;
+      case 3:
+        if (exp.kept) {
+          score += exp.delta;
+          detailText.innerHTML = label + '<span style="color:#4a9"><strong>KEEP.</strong></span> Metric improved. Modification is retained.<br>New baseline: <strong>' + score.toFixed(3) + "</strong>";
+        } else {
+          detailText.innerHTML = label + '<span style="color:#c66"><strong>REVERT.</strong></span> Metric did not improve. Rolling back to previous version.<br>Baseline unchanged: <strong>' + score.toFixed(3) + "</strong>";
+        }
+        updateScore();
+        break;
+      case 4:
+        logEntries.push({
+          num: logEntries.length + 1,
+          mod: exp.mod,
+          delta: exp.delta,
+          kept: exp.kept
+        });
+        renderLog();
+        var kept = logEntries.filter(function(e) { return e.kept; }).length;
+        var total = logEntries.length;
+        detailText.innerHTML = label + "Result logged. <strong>" + kept + "</strong> kept, <strong>" + (total - kept) + "</strong> reverted out of <strong>" + total + "</strong> experiments.<br><br>The loop continues. The process doesn't change. The judge doesn't change. Only the subject evolves.";
+        iterEl.textContent = "Iteration " + total;
+        break;
+    }
+  }
+
+  function reset() {
+    if (autoInterval) { clearInterval(autoInterval); autoInterval = null; btnAuto.textContent = "Auto"; }
+    currentStage = -1;
+    currentExp = 0;
+    score = 1.000;
+    logEntries = [];
+    setStage(-1);
+    detailText.innerHTML = 'Press <strong>Step</strong> to begin the self-improvement loop, or <strong>Auto</strong> to run it continuously. The agent will try modifications to its own tool implementations and measure the result.';
+    renderLog();
+    scoreEl.innerHTML = "";
+    iterEl.textContent = "";
+  }
+
+  btnStep.addEventListener("click", function() {
+    if (autoInterval) { clearInterval(autoInterval); autoInterval = null; btnAuto.textContent = "Auto"; }
+    step();
+  });
+
+  btnAuto.addEventListener("click", function() {
+    if (autoInterval) {
+      clearInterval(autoInterval);
+      autoInterval = null;
+      btnAuto.textContent = "Auto";
+    } else {
+      autoInterval = setInterval(step, 1200);
+      btnAuto.textContent = "Pause";
+    }
+  });
+
+  btnReset.addEventListener("click", reset);
+})();
+</script>
+
+</body>
+</html>
