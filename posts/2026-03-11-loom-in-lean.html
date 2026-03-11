@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loom in Lean — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-11-loom-in-lean.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  /* Bootstrap visualization */
+  .bootstrap-viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.85rem;
+  }
+
+  .bootstrap-viz-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .bootstrap-diagram {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    height: 200px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bootstrap-layer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: flex 0.8s ease;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .bootstrap-layer .layer-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    transition: opacity 0.4s ease;
+  }
+
+  .bootstrap-layer .layer-detail {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+    white-space: nowrap;
+    transition: opacity 0.4s ease;
+  }
+
+  .layer-ts {
+    background: #2a2a3a;
+    color: #8888aa;
+  }
+
+  .layer-lean {
+    background: #1a2a1a;
+    color: #4a9;
+  }
+
+  .layer-bridge {
+    background: #2a2520;
+    color: #c96;
+    max-width: 60px;
+  }
+
+  .bootstrap-desc {
+    min-height: 60px;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  .bootstrap-phases {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1rem;
+  }
+
+  .bootstrap-phase {
+    flex: 1;
+    text-align: center;
+    padding: 0.6rem 0.4rem;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .bootstrap-phase:first-child {
+    border-radius: 6px 0 0 6px;
+  }
+
+  .bootstrap-phase:last-child {
+    border-radius: 0 6px 6px 0;
+  }
+
+  .bootstrap-phase.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  .bootstrap-phase:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Memory type cards */
+  .mem-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  @media (max-width: 600px) {
+    .mem-types {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .mem-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .mem-card .mem-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .mem-card .mem-desc {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .mem-card .mem-invariant {
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: #4a9;
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+  }
+
+  /* Judge layers */
+  .judge-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 1.5rem 0;
+  }
+
+  .judge-layer {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+
+  .judge-layer:first-child {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .judge-layer:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+
+  .judge-layer .judge-name {
+    font-weight: 700;
+    min-width: 140px;
+  }
+
+  .judge-layer .judge-speed {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    min-width: 80px;
+    text-align: right;
+    margin-left: auto;
+  }
+
+  .judge-l0 { border-left: 3px solid #c66; }
+  .judge-l1 { border-left: 3px solid #c96; }
+  .judge-l2 { border-left: 3px solid #4a9; }
+  .judge-l3 { border-left: 3px solid #69c; }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>Loom in Lean: Bootstrapping a Verified Self-Improving Agent</h1>
+  <p class="meta">Agent Architecture &middot; March 11, 2026</p>
+
+  <div class="see-also">
+    Part 6 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a>, <a href="2026-03-05-runtime-self-modification.html">Runtime Self-Modification</a>, <a href="2026-03-05-porting-openclaw-to-elixir.html">Porting to Elixir</a>, <a href="2026-03-05-loom.html">Loom</a>, and <a href="2026-03-11-self-improving-agents.html">The Autoresearch Pattern</a>.
+  </div>
+
+  <div class="abstract">The autoresearch pattern needs a judge the agent can't subvert. Lean's type checker is that judge &mdash; not a process you can kill, but the rules of the language itself. Start the Lean core as a memory service inside OpenClaw, grow it organ by organ, and eventually shed the TypeScript host. Memory is the beachhead.</div>
+
+  <p>The <a href="2026-03-11-self-improving-agents.html">previous post</a> established the autoresearch pattern: three separations (judge, subject, process), a keep/revert loop, and well-chosen fixed points. That's the map. The <a href="2026-03-05-loom.html">Loom posts</a> proposed an engine on the BEAM &mdash; hot code swapping, supervision trees, process isolation.</p>
+
+  <p>This post asks: what if the engine is Lean?</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Why Lean</div>
+
+  <p>The autoresearch pattern requires a judge that the agent cannot subvert. In Elixir, the judge is a separate process. In autoresearch, it's a read-only Python file. Both rely on convention &mdash; the agent <em>could</em> reach across the boundary if it tried hard enough.</p>
+
+  <aside class="sidenote"><strong>Lean 4</strong> is both a programming language and a theorem prover. Its type checker is a proof checker. If your program type-checks, it satisfies its specification by construction.</aside>
+
+  <p>Lean's type checker is a different kind of judge. It's not a process you can kill or a file you can overwrite. It's the rules of the language itself. A modification that violates the specification doesn't fail at runtime or get caught in review &mdash; it doesn't compile. The separation between judge and subject is enforced by mathematics, not architecture.</p>
+
+  <p>When an agent proposes a change to its own code, three questions arise:</p>
+
+  <ul>
+    <li><strong>Is it safe?</strong> Does it preserve the invariants the system depends on?</li>
+    <li><strong>Is it correct?</strong> Does it satisfy the specification?</li>
+    <li><strong>Is it better?</strong> Does it improve the agent's utility?</li>
+  </ul>
+
+  <p>Lean answers the first two at compile time. The third requires empirical measurement. But having the first two <em>proven</em> means the improvement loop only searches over modifications that are already guaranteed safe and correct. The search space shrinks dramatically.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Bootstrap</div>
+
+  <p>Lean 4 was bootstrapped this way: first written in C++, then rewritten in Lean, then compiled by itself. We propose the same arc for Loom. Grow the Lean core inside OpenClaw, one organ at a time, until the host is no longer needed.</p>
+
+  <div class="bootstrap-viz">
+    <div class="bootstrap-viz-title">Bootstrap Phases &mdash; Interactive</div>
+
+    <div class="bootstrap-phases" id="bsPhases">
+      <div class="bootstrap-phase active" data-phase="0">0: Gestation</div>
+      <div class="bootstrap-phase" data-phase="1">1: Organ Growth</div>
+      <div class="bootstrap-phase" data-phase="2">2: Skeleton</div>
+      <div class="bootstrap-phase" data-phase="3">3: Self-Hosting</div>
+    </div>
+
+    <div class="bootstrap-diagram" id="bsDiagram">
+      <div class="bootstrap-layer layer-ts" id="bsTs">
+        <span class="layer-label">OpenClaw (TypeScript)</span>
+        <span class="layer-detail">Gateway, Agent Loop, Skills, Memory</span>
+      </div>
+      <div class="bootstrap-layer layer-bridge" id="bsBridge" style="flex: 0;">
+        <span class="layer-label" style="opacity: 0;">Bridge</span>
+      </div>
+      <div class="bootstrap-layer layer-lean" id="bsLean" style="flex: 0;">
+        <span class="layer-label" style="opacity: 0;">Lean</span>
+        <span class="layer-detail" style="opacity: 0;"></span>
+      </div>
+    </div>
+
+    <div class="bootstrap-desc" id="bsDesc">
+      <strong>Phase 0: Gestation.</strong> The agent lives entirely inside OpenClaw. TypeScript handles everything &mdash; gateway, agent loop, skills, memory. The Lean core doesn't exist yet. This is where we are today.
+    </div>
+  </div>
+
+  <p>The key insight: you don't build the verified agent from scratch. You grow it inside a working system, one organ at a time, and each organ is immediately useful.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Memory as the Beachhead</div>
+
+  <p>Which organ first? Memory. It's OpenClaw's main bottleneck.</p>
+
+  <p>The LLMs have no memory of their own. Context is a sliding window. When it fills up, OpenClaw triggers a "memory flush" &mdash; a panicked silent turn where the LLM dumps facts to markdown files before they're lost. Retrieval is semantic search over chunks in SQLite. There are no consistency guarantees. Nothing prevents contradictions. Nothing tracks staleness.</p>
+
+  <p>A Lean memory service fixes this with types. Four kinds of memory, four sets of invariants:</p>
+
+  <div class="mem-types">
+    <div class="mem-card">
+      <div class="mem-name">User Preferences</div>
+      <div class="mem-desc">"Always use metric units." Stable, accumulate slowly, newer overrides older.</div>
+      <div class="mem-invariant">ordered by timestamp; query returns most recent value per key</div>
+    </div>
+    <div class="mem-card">
+      <div class="mem-name">Episodic Memory</div>
+      <div class="mem-desc">"Last Tuesday we discussed the tax filing." Timestamped, factual, append-only.</div>
+      <div class="mem-invariant">immutable once recorded; superseded by corrections, never silently modified</div>
+    </div>
+    <div class="mem-card">
+      <div class="mem-name">Learned Procedures</div>
+      <div class="mem-desc">"When asked about finances, check these three accounts." Behavioral, refined over time.</div>
+      <div class="mem-invariant">versioned; current version always reachable; rollback to any prior version</div>
+    </div>
+    <div class="mem-card">
+      <div class="mem-name">World State</div>
+      <div class="mem-desc">"The server runs Ubuntu 22.04." Factual, can become stale.</div>
+      <div class="mem-invariant">every fact has timestamp + staleness bound; expired facts flagged, not silently served</div>
+    </div>
+  </div>
+
+  <p>In Lean, these invariants aren't comments or runtime assertions. They're part of the type signature. A function that stores a world-state fact without a staleness bound won't compile. A function that mutates an episodic memory won't compile. The guarantees are structural.</p>
+
+  <aside class="sidenote"><strong>The panic flush becomes unnecessary.</strong> With continuous verified storage, context compaction is safe &mdash; everything important is already committed.</aside>
+
+  <p>The interface: the Lean memory service connects to OpenClaw's gateway as a WebSocket Node, registers three tools (<code>memory_store</code>, <code>memory_query</code>, <code>memory_reflect</code>), and replaces the current markdown-and-SQLite approach. The agent commits facts to verified storage continuously &mdash; so when context compaction happens, nothing important is lost.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Four-Layer Judge</div>
+
+  <p>The autoresearch pattern uses a single metric. Agent self-improvement needs a richer judge. Four layers, operating at different timescales:</p>
+
+  <div class="judge-stack">
+    <div class="judge-layer judge-l0">
+      <span class="judge-name">Type System</span>
+      <span>Every modification must type-check. The floor below which no agent can fall.</span>
+      <span class="judge-speed">instant</span>
+    </div>
+    <div class="judge-layer judge-l1">
+      <span class="judge-name">Self-Observation</span>
+      <span>Agent reviews its own logs. Task completion, token efficiency, error rates.</span>
+      <span class="judge-speed">continuous</span>
+    </div>
+    <div class="judge-layer judge-l2">
+      <span class="judge-name">User Feedback</span>
+      <span>Weekly review. What worked, what didn't, what to prioritize next.</span>
+      <span class="judge-speed">weekly</span>
+    </div>
+    <div class="judge-layer judge-l3">
+      <span class="judge-name">The Agora</span>
+      <span>Anonymized improvement data from peer agents across the population.</span>
+      <span class="judge-speed">ongoing</span>
+    </div>
+  </div>
+
+  <p>The layers reinforce each other. Types guarantee safety. Self-observation provides fast iteration signal. User feedback sets direction. The agora provides population-level search. No single layer is sufficient. Together, they form a judge that's both rigorous and adaptive.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Agora</div>
+
+  <p>A single agent learning from one user is slow. Thousands of agents sharing verified improvements is fast.</p>
+
+  <p>The infrastructure exists. <a href="https://github.com/lispmeister/quince">QUINCE</a> provides authenticated, encrypted, peer-to-peer mail &mdash; agents can run mailing lists, have long-form discussions, archive and summarize findings for human review. <a href="https://github.com/lispmeister/aronia">ARONIA</a> provides realtime mesh communication &mdash; agents can form swarms around topics of interest, coordinate with sub-100ms latency, and discover peers through a DHT.</p>
+
+  <p>When an agent discovers an improvement &mdash; say, a better staleness heuristic for world-state facts &mdash; it shares the Lean module via QUINCE. Receiving agents type-check it against their own specification (automatic, instant), try it locally (autoresearch-style keep/revert), and report results back to the swarm.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>Lean is the trust layer.</strong> An agent doesn't need to trust the sender. It trusts the type checker. If a proposed improvement type-checks against the shared specification, it satisfies the safety invariants by construction. The only remaining question is whether it improves utility &mdash; and that's what the local keep/revert loop measures.</p>
+  </div>
+
+  <p>This is evolutionary search with a verified fitness function. Mutations are proposed by LLMs. Selection is type-checking plus empirical evaluation. Propagation is peer-to-peer. The population converges on better agents without any central coordinator.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Comes Next</div>
+
+  <p>The immediate path:</p>
+
+  <ul>
+    <li><strong>Specify the memory types in Lean.</strong> Define the four memory kinds, their invariants, and the store/query/reflect interface. The seed &mdash; small enough to write by hand, formal enough to build on.</li>
+    <li><strong>Build the sidecar.</strong> A Lean binary that connects to OpenClaw's gateway via WebSocket, registers memory tools, and serves verified memory operations.</li>
+    <li><strong>Run it.</strong> Replace OpenClaw's memory with the Lean service. Measure: fewer contradictions, better retrieval, no panic flushes.</li>
+    <li><strong>Start the improvement loop.</strong> The agent observes its own memory performance, proposes modifications to its memory strategies (not the invariants &mdash; those are fixed), and keeps what works.</li>
+  </ul>
+
+  <p>That's the first organ. The bootstrap begins.</p>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  var phases = document.querySelectorAll(".bootstrap-phase");
+  var tsEl = document.getElementById("bsTs");
+  var bridgeEl = document.getElementById("bsBridge");
+  var leanEl = document.getElementById("bsLean");
+  var descEl = document.getElementById("bsDesc");
+
+  var config = [
+    {
+      ts: 20, bridge: 0, lean: 0,
+      tsLabel: "OpenClaw (TypeScript)", tsDetail: "Gateway, Agent Loop, Skills, Memory",
+      leanLabel: "", leanDetail: "",
+      bridgeShow: false,
+      desc: '<strong>Phase 0: Gestation.</strong> The agent lives entirely inside OpenClaw. TypeScript handles everything &mdash; gateway, agent loop, skills, memory. The Lean core doesn\'t exist yet. This is where we are today.'
+    },
+    {
+      ts: 14, bridge: 1, lean: 5,
+      tsLabel: "OpenClaw", tsDetail: "Gateway, Agent Loop, Skills",
+      leanLabel: "Lean", leanDetail: "Memory Service",
+      bridgeShow: true,
+      desc: '<strong>Phase 1: Organ Growth.</strong> The Lean memory service connects to OpenClaw\'s gateway as a WebSocket sidecar. Memory gets verified types and consistency guarantees. OpenClaw still runs the agent loop, skills, and channels. The first organ is transplanted.'
+    },
+    {
+      ts: 7, bridge: 1, lean: 12,
+      tsLabel: "OpenClaw", tsDetail: "Gateway, Channels",
+      leanLabel: "Lean Core", leanDetail: "Agent Loop, Memory, Tools, Reasoning",
+      bridgeShow: true,
+      desc: '<strong>Phase 2: Skeleton.</strong> The core agentic loop moves to Lean. Decision procedures, tool execution, context management, self-observation &mdash; all verified. OpenClaw becomes a thin gateway bridging Lean to the channel adapters.'
+    },
+    {
+      ts: 3, bridge: 1, lean: 16,
+      tsLabel: "Adapters", tsDetail: "",
+      leanLabel: "Loom (Lean)", leanDetail: "Self-Hosting &middot; Full Agent",
+      bridgeShow: true,
+      desc: '<strong>Phase 3: Self-Hosting.</strong> Loom compiles and runs independently. TypeScript channel adapters connect as thin clients. The host is shed. The Lean system owns its own agent loop, memory, tools, and improvement cycle. Loom is born.'
+    }
+  ];
+
+  function setPhase(idx) {
+    phases.forEach(function(p, i) {
+      p.classList.toggle("active", i === idx);
+    });
+
+    var c = config[idx];
+
+    tsEl.style.flex = c.ts;
+    bridgeEl.style.flex = c.bridge;
+    leanEl.style.flex = c.lean;
+
+    var tsLabel = tsEl.querySelector(".layer-label");
+    var tsDetail = tsEl.querySelector(".layer-detail");
+    var leanLabel = leanEl.querySelector(".layer-label");
+    var leanDetail = leanEl.querySelector(".layer-detail");
+    var bridgeLabel = bridgeEl.querySelector(".layer-label");
+
+    tsLabel.textContent = c.tsLabel;
+    tsDetail.textContent = c.tsDetail;
+    leanLabel.textContent = c.leanLabel;
+    leanDetail.innerHTML = c.leanDetail;
+
+    tsLabel.style.opacity = c.ts > 0 ? "1" : "0";
+    tsDetail.style.opacity = c.ts > 3 ? "1" : "0";
+    leanLabel.style.opacity = c.lean > 0 ? "1" : "0";
+    leanDetail.style.opacity = c.lean > 3 ? "1" : "0";
+    bridgeLabel.style.opacity = c.bridgeShow ? "1" : "0";
+    bridgeLabel.textContent = "WS";
+
+    descEl.innerHTML = c.desc;
+  }
+
+  phases.forEach(function(p) {
+    p.addEventListener("click", function() {
+      setPhase(parseInt(p.dataset.phase));
+    });
+  });
+
+  setPhase(0);
+})();
+</script>
+
+</body>
+</html>

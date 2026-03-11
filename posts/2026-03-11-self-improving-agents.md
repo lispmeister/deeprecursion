@@ -6,6 +6,8 @@ series: "OpenClaw/Loom"
 series_part: 5
 prev: "Loom: The Case for Building on Opal"
 prev_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-05-loom.md
+next: "Loom in Lean: Bootstrapping a Verified Self-Improving Agent"
+next_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-11-loom-in-lean.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-11-self-improving-agents.html
 ---
 
@@ -166,3 +168,5 @@ Loom on the BEAM gives you the engine. The autoresearch pattern gives you the ma
 5. Start the loop. Walk away. Read the logs in the morning.
 
 Self-improvement is not a capability you bolt on. It's an architecture: the right separations, the right fixed points, and a loop that runs forever.
+
+*Continue reading: [Loom in Lean: Bootstrapping a Verified Self-Improving Agent](2026-03-11-loom-in-lean.md)*

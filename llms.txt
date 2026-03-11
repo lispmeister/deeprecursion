@@ -4,6 +4,7 @@
 
 ## Posts
 
+- [Loom in Lean: Bootstrapping a Verified Self-Improving Agent](https://lispmeister.github.io/deeprecursion/posts/2026-03-11-loom-in-lean.md): Grow a Lean core inside OpenClaw, starting with a verified memory service. Four memory types, four invariants, a four-layer judge, and the agora.
 - [The Autoresearch Pattern: A Blueprint for Self-Improving Agents](https://lispmeister.github.io/deeprecursion/posts/2026-03-11-self-improving-agents.md): Karpathy's autoresearch reveals the structure that makes self-improvement work: three separations (judge, subject, process), a keep/revert loop, and well-chosen fixed points.
 - [Loom: The Case for Building on Opal](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-loom.md): An existing Elixir port of the Pi coding agent already solves the hardest architectural problem. One architect, frontier models, five weeks.
 - [Porting OpenClaw's Core to Elixir](https://lispmeister.github.io/deeprecursion/posts/2026-03-05-porting-openclaw-to-elixir.md): A practical assessment of porting the core gateway and agent loop to Elixir, keeping the TypeScript channels, and bridging them.
