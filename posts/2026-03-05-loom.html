@@ -132,6 +132,8 @@
 
   <p>Opal is an Elixir port of the Pi coding agent &mdash; the same agent that sits at the core of OpenClaw. It's ~4,500 lines of clean OTP code with 87 test files. The architecture is not a sketch; it's a working system.</p>
 
+  <aside class="sidenote"><strong>Risk note:</strong> Opal's author explicitly describes it as a hobby project. The architecture is sound, but there's no commitment to maintenance, compatibility, or production readiness. Building on Opal means accepting orphan risk &mdash; we'd be forking, not depending.</aside>
+
   <p>The agent loop is a <code>:gen_statem</code> with four explicit states: <strong>idle &rarr; running &rarr; streaming &rarr; executing_tools</strong>. Each session gets its own supervision subtree: a <code>Task.Supervisor</code> for concurrent tool execution, a <code>DynamicSupervisor</code> for sub-agents, an optional MCP supervisor, and the agent process itself. Tools implement an <code>Opal.Tool</code> behaviour. Providers implement an <code>Opal.Provider</code> behaviour. Sessions persist to DETS with branching support.</p>
 
   <p>Here's what's already implemented:</p>
@@ -394,6 +396,8 @@
   <p><strong>2. The concurrency model is right for multi-channel agents.</strong> OpenClaw routes messages from 20+ platforms through a single Node.js event loop. The BEAM gives each session its own lightweight process, each channel its own process, each tool execution its own supervised task. Backpressure, isolation, and fault tolerance are structural. A slow LLM response on one session doesn't block tool execution on another. A crashed WhatsApp adapter doesn't take down Telegram.</p>
 
   <p><strong>3. Observability is built into the runtime.</strong> Connect to a running BEAM node with <code>:observer</code> or <code>remote_console</code> and you can inspect every process, every message queue, every supervision tree, every ETS table &mdash; live, in production. No logging framework, no metrics pipeline, no APM vendor. The runtime <em>is</em> the observability platform. For an AI agent system where understanding what the agent is doing (and why) is a safety requirement, this matters.</p>
+
+  <p>One limitation remains. The BEAM gives you <em>runtime</em> safety: if a modification crashes, the supervisor rolls back. But it can't tell you whether a modification that <em>doesn't</em> crash is actually correct. A subtly wrong routing change or a memory strategy that silently loses context &mdash; these pass the supervisor's test (no crash) while degrading the agent. Runtime safety catches catastrophic failures. It doesn't catch logical ones. For that, you'd need a type system that can prove properties about your modifications before they run &mdash; a question we'll return to.</p>
 
   <p>OpenClaw proved the product. Opal proved the architecture. Loom would combine both: the channel ecosystem and user-facing features of OpenClaw, running on a core that was designed from the ground up for the properties that matter most in an AI agent &mdash; fault isolation, hot upgrades, and runtime self-modification. The name fits: a loom runs on a beam, and weaves new patterns at runtime.</p>
 

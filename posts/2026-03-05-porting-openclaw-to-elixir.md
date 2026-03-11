@@ -56,6 +56,8 @@ The whole point is that OTP gives you for free what OpenClaw hand-builds in Type
 
 The self-modification problem from the first post becomes tractable: the agent proposes a module change, the supervisor hot-loads it, and if it crashes, rolls back automatically. No git branches, no rebuild, no restart.
 
+> **The silent failure case:** hot code swapping catches crashes. It doesn't catch a modification that runs without error but produces subtly wrong results — a context strategy that silently drops important facts, a routing change that slightly degrades response quality. For those, you need a stronger guarantee than "it didn't crash."
+
 ---
 
 ## Effort Estimate: Humans Only

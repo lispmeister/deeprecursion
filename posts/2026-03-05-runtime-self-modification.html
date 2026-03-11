@@ -399,6 +399,8 @@
     <p style="margin: 0"><strong>The hybrid approach:</strong> Use Elixir for the infrastructure — supervision, distribution, message routing, fault tolerance — and embed a Lisp (or a Lisp-like DSL) as the agent's reasoning and self-modification layer. The agent thinks in s-expressions, generates code as data, and the BEAM keeps it from killing itself in the process.</p>
   </div>
 
+  <p>There's a third axis neither fully covers: <em>verified</em> self-modification. Lisp gives you depth &mdash; code as data, image snapshots, the MOP. The BEAM gives you safety &mdash; supervision, isolation, rollback. But neither can <em>prove</em> that a modification is correct before it runs. Lisp trusts the programmer. Erlang trusts the supervisor to recover from the mistake. A dependent type system could, in principle, make the type checker itself the judge: a modification that violates the specification doesn't compile, doesn't deploy, doesn't need rollback because it never ran. That's a different kind of guarantee &mdash; mathematical rather than operational &mdash; and it may matter most for the self-improvement case, where the agent is both the programmer and the subject.</p>
+
   <p>The TypeScript approach from the previous post isn't wrong. It's just building a self-modifying system out of a language that treats self-modification as an error condition. That's the fundamental mismatch.</p>
 
   <div style="background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 1.25rem 1.5rem; margin: 2rem 0; font-size: 0.9rem;">

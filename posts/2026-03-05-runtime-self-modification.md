@@ -59,6 +59,8 @@ Elixir gives you *safer* self-modification. Isolation, supervision, hot swapping
 
 > **The hybrid approach:** Use Elixir for the infrastructure — supervision, distribution, message routing, fault tolerance — and embed a Lisp (or a Lisp-like DSL) as the agent's reasoning and self-modification layer. The agent thinks in s-expressions, generates code as data, and the BEAM keeps it from killing itself in the process.
 
+There's a third axis neither fully covers: *verified* self-modification. Lisp gives you depth — code as data, image snapshots, the MOP. The BEAM gives you safety — supervision, isolation, rollback. But neither can *prove* that a modification is correct before it runs. Lisp trusts the programmer. Erlang trusts the supervisor to recover from the mistake. A dependent type system could, in principle, make the type checker itself the judge: a modification that violates the specification doesn't compile, doesn't deploy, doesn't need rollback because it never ran. That's a different kind of guarantee — mathematical rather than operational — and it may matter most for the self-improvement case, where the agent is both the programmer and the subject.
+
 The TypeScript approach from the previous post isn't wrong. It's just building a self-modifying system out of a language that treats self-modification as an error condition. That's the fundamental mismatch.
 
 *Continue reading: [Porting OpenClaw's Core to Elixir](2026-03-05-porting-openclaw-to-elixir.md)*

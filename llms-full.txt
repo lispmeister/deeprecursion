@@ -324,6 +324,8 @@ Then we found [Opal](https://github.com/matteing/opal).
 
 Opal is an Elixir port of the Pi coding agent — the same agent that sits at the core of OpenClaw. It's ~4,500 lines of clean OTP code with 87 test files. The architecture is not a sketch; it's a working system.
 
+> **Risk note:** Opal's author explicitly describes it as a hobby project. The architecture is sound, but there's no commitment to maintenance, compatibility, or production readiness. Building on Opal means accepting orphan risk — we'd be forking, not depending.
+
 The agent loop is a `:gen_statem` with four explicit states: **idle → running → streaming → executing_tools**. Each session gets its own supervision subtree: a `Task.Supervisor` for concurrent tool execution, a `DynamicSupervisor` for sub-agents, an optional MCP supervisor, and the agent process itself. Tools implement an `Opal.Tool` behaviour. Providers implement an `Opal.Provider` behaviour. Sessions persist to DETS with branching support.
 
 Here's what's already implemented:
@@ -438,6 +440,8 @@ Three reasons.
 
 **3. Observability is built into the runtime.** Connect to a running BEAM node with `:observer` or `remote_console` and you can inspect every process, every message queue, every supervision tree, every ETS table — live, in production. No logging framework, no metrics pipeline, no APM vendor. The runtime *is* the observability platform. For an AI agent system where understanding what the agent is doing (and why) is a safety requirement, this matters.
 
+One limitation remains. The BEAM gives you *runtime* safety: if a modification crashes, the supervisor rolls back. But it can't tell you whether a modification that *doesn't* crash is actually correct. A subtly wrong routing change or a memory strategy that silently loses context — these pass the supervisor's test (no crash) while degrading the agent. Runtime safety catches catastrophic failures. It doesn't catch logical ones. For that, you'd need a type system that can prove properties about your modifications before they run — a question we'll return to.
+
 OpenClaw proved the product. Opal proved the architecture. Loom would combine both: the channel ecosystem and user-facing features of OpenClaw, running on a core that was designed from the ground up for the properties that matter most in an AI agent — fault isolation, hot upgrades, and runtime self-modification. The name fits: a loom runs on a beam, and weaves new patterns at runtime.
 
 Five weeks of focused work. One architect. Unlimited tokens. The tools are all there.
@@ -505,6 +509,8 @@ The whole point is that OTP gives you for free what OpenClaw hand-builds in Type
 - **Two-version coexistence** — old and new code run simultaneously during upgrades
 
 The self-modification problem from the first post becomes tractable: the agent proposes a module change, the supervisor hot-loads it, and if it crashes, rolls back automatically. No git branches, no rebuild, no restart.
+
+> **The silent failure case:** hot code swapping catches crashes. It doesn't catch a modification that runs without error but produces subtly wrong results — a context strategy that silently drops important facts, a routing change that slightly degrades response quality. For those, you need a stronger guarantee than "it didn't crash."
 
 ---
 
@@ -613,6 +619,8 @@ Common Lisp gives you *deeper* self-modification. The Meta-Object Protocol lets 
 Elixir gives you *safer* self-modification. Isolation, supervision, hot swapping, and rollback are structural, not opt-in. You don't need discipline or conventions to prevent a bad patch from taking down the system — the runtime enforces it. For a production system where self-modification is a feature, not an experiment, the BEAM's "let it crash" philosophy is exactly right.
 
 > **The hybrid approach:** Use Elixir for the infrastructure — supervision, distribution, message routing, fault tolerance — and embed a Lisp (or a Lisp-like DSL) as the agent's reasoning and self-modification layer. The agent thinks in s-expressions, generates code as data, and the BEAM keeps it from killing itself in the process.
+
+There's a third axis neither fully covers: *verified* self-modification. Lisp gives you depth — code as data, image snapshots, the MOP. The BEAM gives you safety — supervision, isolation, rollback. But neither can *prove* that a modification is correct before it runs. Lisp trusts the programmer. Erlang trusts the supervisor to recover from the mistake. A dependent type system could, in principle, make the type checker itself the judge: a modification that violates the specification doesn't compile, doesn't deploy, doesn't need rollback because it never ran. That's a different kind of guarantee — mathematical rather than operational — and it may matter most for the self-improvement case, where the agent is both the programmer and the subject.
 
 The TypeScript approach from the previous post isn't wrong. It's just building a self-modifying system out of a language that treats self-modification as an error condition. That's the fundamental mismatch.
 
