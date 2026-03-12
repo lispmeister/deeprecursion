@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Prime and the Lab — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-12-recursive-self-improvement.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  /* Architecture diagram */
+  .arch-viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  .arch-viz-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .arch-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .arch-row {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  @media (max-width: 600px) {
+    .arch-row {
+      flex-direction: column;
+    }
+  }
+
+  .arch-box {
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    flex: 1;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .arch-box:hover {
+    border-color: var(--accent);
+  }
+
+  .arch-box.active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .arch-box-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .arch-box-sub {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  .arch-box.prime {
+    border-color: var(--green);
+  }
+
+  .arch-box.prime.active {
+    background: var(--green-dim);
+    border-color: var(--green);
+  }
+
+  .arch-box.supervisor {
+    border-color: var(--amber);
+  }
+
+  .arch-box.supervisor.active {
+    background: rgba(224, 180, 90, 0.1);
+    border-color: var(--amber);
+  }
+
+  .arch-box.lab {
+    border-color: var(--cyan);
+  }
+
+  .arch-box.lab.active {
+    background: rgba(90, 184, 224, 0.1);
+    border-color: var(--cyan);
+  }
+
+  .arch-box.host-env {
+    border-style: dashed;
+    border-color: var(--border);
+  }
+
+  .arch-desc {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text);
+    min-height: 4rem;
+  }
+
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    flex: 0 0 auto;
+    padding: 0 0.5rem;
+  }
+
+  /* Cycle diagram */
+  .cycle-viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .cycle-viz-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .cycle-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cycle-step {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .cycle-step:hover {
+    border-color: var(--accent);
+  }
+
+  .cycle-step.active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: #eeeef4;
+  }
+
+  .cycle-step.success {
+    border-color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .cycle-step.failure {
+    border-color: var(--red);
+    background: rgba(224, 90, 111, 0.1);
+  }
+
+  .cycle-arrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    padding: 0 0.25rem;
+  }
+
+  .cycle-desc {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    min-height: 3rem;
+  }
+
+  .cycle-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .cycle-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .cycle-btn:hover {
+    border-color: var(--accent);
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  /* Risk cards */
+  .risk-card {
+    border: 1px solid var(--border);
+    border-left: 3px solid #c66;
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+  }
+
+  .risk-card .risk-name {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .risk-card .risk-desc {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* Reference list */
+  .ref-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .ref-list li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .ref-list li:last-child {
+    border-bottom: none;
+  }
+
+  .ref-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>The Prime and the Lab: Recursive Self-Improvement for Coding Agents</h1>
+  <p class="meta">Agent Architecture &middot; March 12, 2026</p>
+
+  <div class="see-also">
+    Part 7 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a>, <a href="2026-03-05-runtime-self-modification.html">Runtime Self-Modification</a>, <a href="2026-03-05-porting-openclaw-to-elixir.html">Porting to Elixir</a>, <a href="2026-03-05-loom.html">Loom</a>, <a href="2026-03-11-self-improving-agents.html">The Autoresearch Pattern</a>, and <a href="2026-03-11-loom-in-lean.html">Loom in Lean</a>.
+  </div>
+
+  <div class="abstract">We abandoned Lean. We abandoned the BEAM. <a href="https://clawhub.ai/byteroverinc/byterover">ByteRover</a> solved memory. What's left is the real question: can an agent rewrite its own code, test the result in isolation, and keep only what works? This post is both the argument and the spec. A ClojureScript agent running in a container, modifying itself, and proving the modification in a second container before promoting it. No frameworks. No build step. Just a loop, a contract, and two containers.</div>
+
+  <p>The <a href="2026-03-11-loom-in-lean.html">previous post</a> proposed Lean as the verification layer for self-modifying agents, with memory as the beachhead organ. Then <a href="https://clawhub.ai/byteroverinc/byterover">ByteRover</a> shipped a production-ready memory system &mdash; hierarchical context trees, automatic curation, daily knowledge mining &mdash; and the entire Lean+QMD approach became unnecessary.</p>
+
+  <p>Good. That failure clarified what we're actually trying to build. Not a verified memory system. Not a formal proof engine. Something simpler and more dangerous: <strong>an agent that can rewrite its own code, test the rewrite in isolation, and promote it if it works.</strong></p>
+
+  <p>This post is the blueprint.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Why ClojureScript</div>
+
+  <p>We considered two languages for self-modifying agent code: ClojureScript and Elixir. The <a href="2026-03-05-runtime-self-modification.html">earlier posts</a> made a strong case for the BEAM &mdash; supervision trees, hot code swapping, process isolation. But those properties solve the wrong problem. We don't need a runtime that catches crashes. We need a language where <em>code is data the agent can manipulate</em>.</p>
+
+  <p>ClojureScript is a Lisp. Code is represented as data structures &mdash; lists, vectors, maps &mdash; the same structures the agent reasons about. The <a href="2026-02-13-sexp-native-editing.html">S-expressions post</a> argued that LLMs should think in homoiconic representations. ClojureScript <em>is</em> that representation.</p>
+
+  <p>The self-hosted compiler (<code>cljs.js</code>) seals it. A ClojureScript program can compile and evaluate ClojureScript at runtime without a build step, without a JVM, without anything beyond Node.js. The agent can <code>eval-str</code> a modified function and watch what happens. No compilation pipeline. No deploy cycle. Just data in, behavior out.</p>
+
+  <p>And ClojureScript interoperates with JavaScript natively. OpenClaw is 57,000 lines of TypeScript. No bridge protocol needed &mdash; ClojureScript calls JS functions directly. This is the difference between growing an organ inside the patient and transplanting one from another species.</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Property</th><th>ClojureScript</th><th>Elixir</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Code is data</td><td>Yes (homoiconic)</td><td>No</td></tr>
+      <tr><td>Runtime eval</td><td><code>cljs.js/eval-str</code></td><td><code>Code.compile_string</code></td></tr>
+      <tr><td>OpenClaw integration</td><td>Native JS interop</td><td>Bridge required</td></tr>
+      <tr><td>Isolation</td><td>None built-in</td><td>Process-level</td></tr>
+      <tr><td>Rollback</td><td>None built-in</td><td>Supervisor trees</td></tr>
+      <tr><td>Build step</td><td>None (self-hosted)</td><td>Mix release</td></tr>
+    </tbody>
+  </table>
+
+  <p>ClojureScript's weakness is obvious: no isolation, no rollback, no supervision. A bad <code>eval-str</code> corrupts the runtime. That's why the agent doesn't modify itself in place. It modifies a copy. In a container.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Architecture</div>
+
+  <p>Three components, all in ClojureScript on Node.js. Click each to explore.</p>
+
+  <div class="arch-viz">
+    <div class="arch-viz-title">System architecture &mdash; click to explore</div>
+    <div class="arch-container">
+      <div class="arch-row">
+        <div class="arch-box prime" data-arch="prime" onclick="showArch('prime')">
+          <div class="arch-box-label" style="color: var(--green);">Prime Container</div>
+          <div class="arch-box-sub">Agent loop + Claude API<br>Eval client + HTTP dashboard<br>Tools: read, write, edit, bash, self-modify</div>
+        </div>
+        <div class="arch-arrow">&harr;</div>
+        <div class="arch-box lab" data-arch="lab" onclick="showArch('lab')">
+          <div class="arch-box-label" style="color: var(--cyan);">Lab Container</div>
+          <div class="arch-box-sub">Modified agent code<br>Form evaluation server<br>Ephemeral &mdash; created per experiment</div>
+        </div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-box supervisor" data-arch="supervisor" onclick="showArch('supervisor')">
+          <div class="arch-box-label" style="color: var(--amber);">Supervisor</div>
+          <div class="arch-box-sub">Host process (macOS)<br>Container lifecycle: create, start, stop, destroy<br>Version management + HTTP dashboard</div>
+        </div>
+        <div class="arch-arrow">&nbsp;</div>
+        <div class="arch-box host-env" data-arch="host" onclick="showArch('host')">
+          <div class="arch-box-label">Host Environment</div>
+          <div class="arch-box-sub">macOS 26 + Apple Silicon<br>Apple Containerization<br>OCI images + container networking</div>
+        </div>
+      </div>
+    </div>
+    <div class="arch-desc" id="archDesc">Click any component above to see how it works.</div>
+  </div>
+
+  <p>The <strong>Prime</strong> is the live agent &mdash; the known-good version that talks to Claude, executes tools, and does real work. When it proposes a modification to its own code, it doesn't apply it. It sends the proposal to the <strong>Supervisor</strong>.</p>
+
+  <p>The <strong>Supervisor</strong> runs on the host. Its only job is container lifecycle: it takes the Prime's source code, applies the proposed modification, and boots a <strong>Lab Container</strong> with the result. The Supervisor doesn't evaluate code. It doesn't talk to Claude. It creates, starts, stops, and destroys containers.</p>
+
+  <p>The <strong>Lab</strong> is ephemeral. It boots the modified agent code and exposes a <strong>form evaluation server</strong> &mdash; a lightweight TCP service that accepts ClojureScript forms as EDN, runs <code>cljs.js/eval-str</code>, and returns results. The Prime connects to this server and probes the modified code: call functions, inspect state, run test scenarios. The Lab doesn't know it's being tested. It's just running.</p>
+
+  <p>If the Prime is satisfied, it tells the Supervisor to promote: the Lab's source becomes the new Prime, the old Prime is archived, and the system restarts with the improved version. If the Prime isn't satisfied, the Supervisor destroys the Lab. Nothing changes.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Modification Cycle</div>
+
+  <p>Every self-modification follows the same six steps. Step through them below.</p>
+
+  <div class="cycle-viz">
+    <div class="cycle-viz-title">Modification cycle &mdash; click steps or use controls</div>
+    <div class="cycle-steps">
+      <div class="cycle-step" data-step="0" onclick="showStep(0)">Propose</div>
+      <div class="cycle-arrow">&rarr;</div>
+      <div class="cycle-step" data-step="1" onclick="showStep(1)">Spawn Lab</div>
+      <div class="cycle-arrow">&rarr;</div>
+      <div class="cycle-step" data-step="2" onclick="showStep(2)">Probe</div>
+      <div class="cycle-arrow">&rarr;</div>
+      <div class="cycle-step" data-step="3" onclick="showStep(3)">Judge</div>
+      <div class="cycle-arrow">&rarr;</div>
+      <div class="cycle-step" data-step="4" onclick="showStep(4)">Promote</div>
+      <div class="cycle-arrow">&rarr;</div>
+      <div class="cycle-step" data-step="5" onclick="showStep(5)">Repeat</div>
+    </div>
+    <div class="cycle-desc" id="cycleDesc">Click a step above to see what happens.</div>
+    <div class="cycle-controls">
+      <button class="cycle-btn" onclick="prevStep()">&larr; Prev</button>
+      <button class="cycle-btn" onclick="nextStep()">Next &rarr;</button>
+      <button class="cycle-btn" onclick="autoPlay()" id="autoBtn">Auto-play</button>
+    </div>
+  </div>
+
+  <p>The cycle is the <a href="2026-03-11-self-improving-agents.html">autoresearch pattern</a> made concrete. The three separations hold: the <strong>judge</strong> (Prime probing the Lab) is separate from the <strong>subject</strong> (Lab running modified code), which is separate from the <strong>process</strong> (Supervisor managing containers). The keep/revert boundary is a container wall.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Form Evaluation Server</div>
+
+  <p>The Lab doesn't run a full nREPL. It runs something simpler: a TCP server that accepts EDN forms and evaluates them. About 50 lines of ClojureScript.</p>
+
+  <pre><code>;; Lightweight form evaluation server
+;; Lab container exposes this on a known port
+
+(ns lab.eval-server
+  (:require [cljs.js :as cljs]
+            [cljs.reader :as reader]
+            ["net" :as net]))
+
+(def compiler-state (cljs/empty-state))
+
+(defn eval-form [form-str callback]
+  (cljs/eval-str
+    compiler-state
+    form-str
+    "lab-eval"
+    {:eval cljs/js-eval :context :expr}
+    (fn [{:keys [value error]}]
+      (callback (pr-str (if error
+                          {:status :error :message (.-message error)}
+                          {:status :ok    :value value}))))))
+
+(defn start-server [port]
+  (let [server (.createServer net
+                 (fn [socket]
+                   (let [buf (atom "")]
+                     (.on socket "data"
+                       (fn [data]
+                         (swap! buf str (.toString data))
+                         (when (.endsWith @buf "\n")
+                           (eval-form (str/trim @buf)
+                             (fn [result]
+                               (.write socket (str result "\n"))
+                               (reset! buf "")))))))))]
+    (.listen server port
+      (fn [] (println "Eval server on port" port)))))</code></pre>
+
+  <p>The Prime connects as a TCP client. It sends a form like <code>(my.agent/handle-tool-call "bash" {:cmd "ls"})</code>, the Lab evaluates it and returns the result as EDN. The Prime can probe any function, inspect any var, test any behavior &mdash; all through this single interface.</p>
+
+  <p><a href="https://github.com/metosin/malli">Malli</a> validates the protocol. Every request and response conforms to a schema. The schemas themselves are EDN &mdash; data the agent can inspect and, eventually, modify.</p>
+
+  <pre><code>;; Malli schemas for the eval protocol
+
+(def EvalRequest
+  [:map
+   [:form :string]
+   [:timeout {:optional true} :int]])
+
+(def EvalResponse
+  [:map
+   [:status [:enum :ok :error]]
+   [:value {:optional true} :any]
+   [:message {:optional true} :string]])</code></pre>
+
+  <hr class="divider">
+
+  <div class="section-header">The Five Tools</div>
+
+  <p>The agent has five tools. Four are borrowed from <a href="https://mariozechner.at/posts/2025-11-30-pi-coding-agent/">Mario Zechner's Pi coding agent</a>, which proved that four tools and a 1,000-token system prompt can match elaborate frameworks on Terminal-Bench. The fifth is ours.</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Tool</th><th>What it does</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>read-file</code></td><td>Read a file's contents</td></tr>
+      <tr><td><code>write-file</code></td><td>Write content to a file (creates or overwrites)</td></tr>
+      <tr><td><code>edit-file</code></td><td>Replace a string in a file</td></tr>
+      <tr><td><code>bash</code></td><td>Execute a shell command</td></tr>
+      <tr><td><code>self-modify</code></td><td>Propose a modification to the agent's own source</td></tr>
+    </tbody>
+  </table>
+
+  <p>The <code>self-modify</code> tool takes a description of the change (what to modify and why), generates the modified <code>.cljs</code> source files, and POSTs a proposal to the Supervisor. The Supervisor creates a Lab container, and the modification cycle begins.</p>
+
+  <p>No MCP. Pi's lesson: a 21-tool MCP server consumes 13,700 tokens before the agent does anything. Five tools, described in the system prompt, is enough.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Containers as the Keep/Revert Boundary</div>
+
+  <p><a href="https://github.com/apple/container">Apple Containerization</a> runs each container as a dedicated lightweight VM via the Virtualization framework. Not shared-kernel containers &mdash; full VM isolation with sub-second boot times. A bad modification can't escape. A malicious <code>eval-str</code> can't touch the host.</p>
+
+  <p>This is the safety layer that ClojureScript lacks. Instead of building isolation into the language (Elixir's approach) or verification into the type system (Lean's approach), we put the entire experiment in a box. The box is disposable. If the experiment fails, we throw away the box.</p>
+
+  <p>The Supervisor manages the box lifecycle. It maintains a <code>versions/</code> directory:</p>
+
+  <pre><code>versions/
+  v001/          &larr; initial agent source
+    src/
+      agent/
+        core.cljs
+        tools.cljs
+        loop.cljs
+  v002/          &larr; first successful modification
+    src/
+      agent/
+        core.cljs
+        tools.cljs
+        loop.cljs   &larr; modified
+  v003/          &larr; second modification
+    ...</code></pre>
+
+  <p>Promotion copies the Lab's source to <code>versions/N+1/</code> and restarts the Prime pointing at the new version. Revert restarts Prime pointing at <code>versions/N</code>. Every version is preserved. The full history of the agent's self-modification is on disk.</p>
+
+  <aside class="sidenote"><strong>Boot time budget:</strong> Apple container boots a lightweight VM in under a second. Self-hosted ClojureScript compilation adds a few seconds. Total iteration floor: ~3&ndash;5 seconds per modification cycle. Fast enough for exploratory improvement, too slow for gradient-style search.</aside>
+
+  <hr class="divider">
+
+  <div class="section-header">Observability</div>
+
+  <p>Both the Prime and Supervisor expose HTTP endpoints. You open a browser and see what the agent is doing.</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Endpoint</th><th>Component</th><th>Returns</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>GET /</code></td><td>Both</td><td>Dashboard (single HTML page)</td></tr>
+      <tr><td><code>GET /logs</code></td><td>Both</td><td>SSE stream of events</td></tr>
+      <tr><td><code>GET /stats</code></td><td>Both</td><td>JSON: counts, uptime, current version</td></tr>
+      <tr><td><code>POST /chat</code></td><td>Prime</td><td>Send a message to the agent, SSE response</td></tr>
+      <tr><td><code>GET /lab/repl</code></td><td>Supervisor</td><td>Proxied view of the Lab's eval session</td></tr>
+      <tr><td><code>GET /versions</code></td><td>Supervisor</td><td>JSON: version history with diffs</td></tr>
+    </tbody>
+  </table>
+
+  <p>The user interacts with the agent through the Prime's <code>/chat</code> endpoint &mdash; a text input in the dashboard that POSTs messages and streams responses via SSE. The same HTTP infrastructure serves both the dashboard and the API. No separate frontend. No WebSocket complexity. Just <code>node:http</code> and Server-Sent Events.</p>
+
+  <p>Pi's other lesson applies here: <strong>observability over automation</strong>. Full visibility into the agent's decisions matters more than convenience features. The dashboard shows every Claude API call, every tool execution, every self-modification proposal, and every probe the Prime sends to the Lab. If the agent does something wrong, you can see exactly why.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Contract</div>
+
+  <p>Communication between components follows a fixed schema, enforced by <a href="https://github.com/metosin/malli">Malli</a>. The <a href="https://wezzard.com/post/2025/09/build-your-first-agentic-loop-9d22">Wezzard agentic loop</a> demonstrated that contract-driven prompts turn free-form LLM output into predictable, machine-readable communication. We apply the same principle at every boundary.</p>
+
+  <pre><code>;; Modification proposal: Prime &rarr; Supervisor
+(def Proposal
+  [:map
+   [:id :string]
+   [:description :string]
+   [:files [:vector
+            [:map
+             [:path :string]
+             [:content :string]]]]
+   [:rationale :string]
+   [:parent-version :int]])
+
+;; Probe result: Lab &rarr; Prime (via eval server)
+(def ProbeResult
+  [:map
+   [:status [:enum :ok :error :timeout]]
+   [:value {:optional true} :any]
+   [:elapsed-ms :int]])
+
+;; Verdict: Prime &rarr; Supervisor
+(def Verdict
+  [:map
+   [:proposal-id :string]
+   [:decision [:enum :promote :revert]]
+   [:evidence [:vector ProbeResult]]
+   [:reasoning :string]])</code></pre>
+
+  <p>The contract is the fixed point. The agent can modify its tools, its loop, its system prompt, its probe strategy &mdash; but not the contract schemas. This is the <a href="2026-03-11-self-improving-agents.html">autoresearch pattern's</a> "well-chosen fixed point": the communication protocol is the one thing that doesn't change while everything else can.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Can the Agent Modify?</div>
+
+  <p>Everything except the contract. The entire agent source is the modification surface:</p>
+
+  <ul>
+    <li><strong>The agentic loop</strong> &mdash; how it processes messages and dispatches tools</li>
+    <li><strong>The system prompt</strong> &mdash; what instructions it gives Claude</li>
+    <li><strong>Tool implementations</strong> &mdash; how read, write, edit, bash, self-modify work</li>
+    <li><strong>The probe strategy</strong> &mdash; how it tests modifications in the Lab</li>
+    <li><strong>New tools</strong> &mdash; the agent can add tools that don't exist yet</li>
+    <li><strong>The eval server</strong> &mdash; how the Lab accepts and processes forms</li>
+  </ul>
+
+  <p>This is full self-modification. The agent can change how it thinks, how it acts, and how it judges its own changes. The only constraints are the Malli schemas (the communication protocol) and the container boundary (the isolation layer).</p>
+
+  <p>The risk is obvious: the agent could modify its probe strategy to always return "promote," then every subsequent modification would be accepted without testing. This is the alignment problem at small scale. For v0, the mitigation is simple: the Supervisor logs every proposal, every probe, and every verdict. A human can review the modification history and revert to any previous version. The agent improves itself; the human supervises the improvement.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Kills This</div>
+
+  <p>Honest failure modes, same as the <a href="2026-03-11-loom-in-lean.html">Lean post</a>.</p>
+
+  <div class="risk-card">
+    <div class="risk-name">Self-hosted ClojureScript is slow</div>
+    <div class="risk-desc"><code>cljs.js</code> compiles at runtime. Boot time for a non-trivial agent could be 5&ndash;10 seconds. If the modification cycle takes 15 seconds end-to-end, the agent can only try 4 modifications per minute. That might be too slow to find useful improvements before the context window fills up.</div>
+  </div>
+
+  <div class="risk-card">
+    <div class="risk-name">"Doesn't crash" isn't a judge</div>
+    <div class="risk-desc">For v0, the success criterion is "the Lab boots and responds to probes without error." This is the same gap we identified in the BEAM: it catches crashes, not subtle degradation. A modification that makes the agent slightly worse at tool selection will pass this test every time. Real judgment requires real metrics &mdash; response quality, task completion, token efficiency. That's v1.</div>
+  </div>
+
+  <div class="risk-card">
+    <div class="risk-name">The probe strategy problem</div>
+    <div class="risk-desc">The agent chooses what probes to send to the Lab. If it modifies its own probe strategy to be less rigorous, subsequent modifications face weaker testing. This is a slow drift toward accepting bad changes. Mitigation: log everything, human review, and eventually a fixed probe suite that the agent can't modify.</div>
+  </div>
+
+  <div class="risk-card">
+    <div class="risk-name">Apple Containerization is pre-1.0</div>
+    <div class="risk-desc"><code>container</code> is under active development with breaking changes between minor versions. The networking, volume mounting, and lifecycle APIs may change. <a href="https://docs.getutm.app/">UTM</a> is a fallback (scriptable via <code>utmctl</code> and AppleScript) but heavier.</div>
+  </div>
+
+  <div class="risk-card">
+    <div class="risk-name">Context window economics</div>
+    <div class="risk-desc">Every modification cycle consumes Claude API tokens: the proposal, the probe results, the verdict. At Claude's pricing, running this loop 24/7 could cost hundreds of dollars per day. The agent needs to be selective about what it tries to improve, which requires judgment it may not have yet.</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">The MVP</div>
+
+  <p>What ships first. Six components, all ClojureScript, no external dependencies beyond Node.js and the <code>container</code> CLI.</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Component</th><th>Description</th><th>Runs on</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Shared library</strong></td><td>Malli schemas, eval protocol, HTTP helpers</td><td>All</td></tr>
+      <tr><td><strong>Supervisor</strong></td><td>Container lifecycle, version management, dashboard</td><td>Host</td></tr>
+      <tr><td><strong>Agent loop</strong></td><td>Claude API, 5 tools, agentic loop</td><td>Prime</td></tr>
+      <tr><td><strong>Eval server</strong></td><td>TCP form evaluation, ~50 lines</td><td>Lab</td></tr>
+      <tr><td><strong>OCI image</strong></td><td>Node.js + self-hosted ClojureScript runtime</td><td>Containers</td></tr>
+      <tr><td><strong>Dashboard</strong></td><td>Single HTML page, SSE logs, stats, chat</td><td>Served by Supervisor &amp; Prime</td></tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>What's explicitly not in v0:</strong> streaming from Claude, multi-provider support, MCP, ByteRover integration, TUI, sub-agents, formal verification, autonomous self-modification triggers. The agent modifies itself when the user asks it to. Autonomous improvement is v1.</p>
+  </div>
+
+  <p>The system starts with <code>supervisor start</code>. The Supervisor creates the Prime container from the initial source, injects the Claude API key as an environment variable, and boots it. The user opens the dashboard in a browser and talks to the agent via <code>/chat</code>. The agent does work. When the user (or eventually the agent itself) decides something should be improved, the modification cycle runs.</p>
+
+  <p>One cycle. One successful promotion. That's the proof of concept. Everything after is iteration.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Why This Might Work</div>
+
+  <p>The <a href="2026-03-11-self-improving-agents.html">autoresearch pattern</a> identified three requirements for recursive self-improvement: separated judge and subject, a keep/revert loop, and well-chosen fixed points. This architecture has all three.</p>
+
+  <p>The <strong>judge</strong> (Prime) is separated from the <strong>subject</strong> (Lab) by a container boundary &mdash; not just a process boundary, but a full VM. The <strong>keep/revert loop</strong> is the modification cycle: promote or destroy. The <strong>fixed points</strong> are the Malli schemas and the container interface. Everything else is mutable.</p>
+
+  <p>ClojureScript adds something the previous proposals didn't have: the agent manipulates code as data. It doesn't generate source text and hope it parses. It constructs syntax trees directly. This is the insight from the <a href="2026-02-13-sexp-native-editing.html">S-expressions post</a>, finally applied to the agent's own code.</p>
+
+  <p>And containers give us the one thing we kept asking for across six posts: a way to say "this modification is safe to try." Not safe because a type checker proved it. Not safe because a supervisor will restart it. Safe because it runs in a box we can throw away.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The thesis:</strong> homoiconic code + VM-level isolation + a keep/revert loop = the minimum viable substrate for recursive self-improvement. Everything we explored before &mdash; BEAM, Lean, formal verification &mdash; was looking for safety in the language. The safety is in the container.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">References</div>
+
+  <ul class="ref-list">
+    <li><a href="https://clawhub.ai/byteroverinc/byterover">ByteRover</a> &mdash; Long-term memory infrastructure for AI agents. Replaced the Lean+QMD approach for OpenClaw's memory. <span class="ref-tag">memory</span></li>
+    <li><a href="https://docs.byterover.dev/autonomous-agents/openclaw">ByteRover OpenClaw integration</a> &mdash; Automatic memory flush, daily knowledge mining, context enrichment for OpenClaw agents. <span class="ref-tag">memory</span></li>
+    <li><a href="https://github.com/apple/container">Apple Containerization</a> &mdash; Lightweight Linux containers as VMs on macOS 26. Per-container kernel isolation via Virtualization.framework. <span class="ref-tag">containers</span></li>
+    <li><a href="https://docs.getutm.app/">UTM</a> &mdash; Scriptable VM management for macOS via <code>utmctl</code> CLI and AppleScript. Fallback if Apple Containerization is unstable. <span class="ref-tag">containers</span></li>
+    <li><a href="https://mariozechner.at/posts/2025-11-30-pi-coding-agent/">Pi Coding Agent</a> (Mario Zechner) &mdash; Radical minimalism: 4 tools, &lt;1000 token prompt, no MCP, no sub-agents. Competitive on Terminal-Bench 2.0. <span class="ref-tag">agent design</span></li>
+    <li><a href="https://wezzard.com/post/2025/09/build-your-first-agentic-loop-9d22">Build Your First 24/7 Agentic Loop</a> (Wezzard) &mdash; Contract-driven evaluator/executor loop using Claude Code subagents. The "feedstock" framing for continuous operation. <span class="ref-tag">agent design</span></li>
+    <li><a href="https://github.com/metosin/malli">Malli</a> (Metosin) &mdash; Data-driven schema library for Clojure/ClojureScript. Schemas as EDN data: validation, coercion, serialization, evolution. <span class="ref-tag">serialization</span></li>
+    <li><a href="https://clojurescript.org/guides/self-hosting">ClojureScript Self-Hosting Guide</a> &mdash; <code>cljs.js</code> namespace for runtime compilation and evaluation without JVM or build tooling. <span class="ref-tag">language</span></li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="section-header">What Comes Next</div>
+
+  <p>Build it. The sequence:</p>
+
+  <ol>
+    <li><strong>OCI image.</strong> Node.js + self-hosted ClojureScript. Verify <code>cljs.js/eval-str</code> works in a container. Measure boot time.</li>
+    <li><strong>Eval server.</strong> TCP server, 50 lines. Verify round-trip: send form, get result.</li>
+    <li><strong>Supervisor.</strong> Shell out to <code>container</code> CLI. Create, start, stop, destroy. Version directory management.</li>
+    <li><strong>Agent loop.</strong> Claude API client, 5 tools, main loop. Get it answering questions in the Prime container.</li>
+    <li><strong>Self-modify tool.</strong> Generate a proposal, send to Supervisor, probe the Lab, judge the result.</li>
+    <li><strong>First modification.</strong> The agent changes one of its own functions, tests it, promotes it. That's the proof.</li>
+  </ol>
+
+  <p>Each step is a falsifiable experiment. If self-hosted ClojureScript is too slow in a container, we switch to pre-compiled. If Apple Containerization is too unstable, we fall back to UTM. If the agent can't generate useful modifications, we constrain the surface. A working prototype is realistic in two to three weeks.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The bet:</strong> one successful self-modification &mdash; an agent that rewrites one of its own functions, tests the result in a Lab, and promotes the improvement &mdash; is worth more than this entire series. Ship it.</p>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  // Architecture diagram interaction
+  var archDescs = {
+    prime: '<strong>Prime Container.</strong> The live agent. Runs the agentic loop: reads user input via HTTP, builds prompts, calls Claude, parses tool calls, executes them. When the agent proposes a self-modification, it writes the modified source files and POSTs a proposal to the Supervisor. After the Lab boots, the Prime connects to the Lab\'s eval server and probes the modified code \u2014 calling functions, checking return values, running test scenarios. The Prime is both the worker and the judge.',
+    lab: '<strong>Lab Container.</strong> Ephemeral. Created by the Supervisor for each modification experiment. Boots the modified agent source with a form evaluation server on a known port. The Prime connects to this server and sends ClojureScript forms to evaluate. The Lab doesn\'t know it\'s being tested \u2014 it just runs code and returns results. If the modification is promoted, the Lab\'s source becomes the next Prime. If reverted, the Lab is destroyed.',
+    supervisor: '<strong>Supervisor.</strong> Runs on the host (macOS), not in a container. Its only job is container lifecycle: create Lab containers from modified source, start them, stop them, destroy them. Manages a versions/ directory where each promoted modification is preserved. Exposes an HTTP dashboard showing container status, version history, and a proxied view of the Lab\'s eval session. The Supervisor doesn\'t evaluate code or talk to Claude.',
+    host: '<strong>Host Environment.</strong> macOS 26 on Apple Silicon. Apple Containerization provides VM-per-container isolation via the Virtualization framework. Each container gets its own kernel. Container-to-container networking is supported on macOS 26, allowing the Prime to directly reach the Lab\'s eval server. UTM (utmctl) is available as a fallback if Apple Containerization is unstable.'
+  };
+
+  window.showArch = function(key) {
+    document.querySelectorAll('.arch-box').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.arch === key);
+    });
+    document.getElementById('archDesc').innerHTML = archDescs[key] || '';
+  };
+
+  // Modification cycle interaction
+  var currentStep = -1;
+  var autoInterval = null;
+
+  var stepDescs = [
+    '<strong>1. Propose.</strong> The agent (in the Prime container) identifies something to improve \u2014 a tool implementation, the system prompt, the agentic loop, or a probe strategy. It generates modified .cljs source files and POSTs a proposal to the Supervisor with a description, the modified files, and a rationale. The proposal conforms to the Malli Proposal schema.',
+    '<strong>2. Spawn Lab.</strong> The Supervisor receives the proposal. It copies the current Prime source to a staging directory, applies the modifications, builds a Lab container with the modified source mounted, and starts it. The Lab boots: Node.js starts, self-hosted ClojureScript compiles the source, the eval server begins listening on a known port. Boot time: ~3\u20135 seconds.',
+    '<strong>3. Probe.</strong> The Prime connects to the Lab\'s eval server via TCP. It sends ClojureScript forms as EDN strings: function calls, state inspections, test scenarios. Each probe returns a result (success with value, error with message, or timeout). The Prime gathers evidence about whether the modification works as intended. This is the judge examining the subject.',
+    '<strong>4. Judge.</strong> The Prime evaluates the probe results. For v0, the criterion is simple: did all probes return :ok status? No crashes, no errors, no timeouts. The Prime constructs a Verdict \u2014 :promote or :revert \u2014 with the evidence (all probe results) and its reasoning. Future versions will add quality metrics: response relevance, task completion rate, token efficiency.',
+    '<strong>5. Promote or Revert.</strong> The Prime sends its Verdict to the Supervisor. If :promote \u2014 the Supervisor copies the Lab\'s source to versions/N+1/, stops the current Prime, restarts it pointing at the new version. The improvement is permanent. If :revert \u2014 the Supervisor destroys the Lab container. Nothing changes. Either way, the Lab is cleaned up.',
+    '<strong>6. Repeat.</strong> The cycle completes. The agent is either running improved code (if promoted) or unchanged code (if reverted). It can immediately propose another modification, building on the last success or trying a different approach after a failure. Each cycle is independent. Each version is preserved. The full history of the agent\'s self-improvement is on disk.'
+  ];
+
+  function updateStepUI() {
+    document.querySelectorAll('.cycle-step').forEach(function(s, i) {
+      s.classList.remove('active', 'success', 'failure');
+      if (i === currentStep) s.classList.add('active');
+      else if (i < currentStep && currentStep <= 4) s.classList.add('success');
+    });
+    document.getElementById('cycleDesc').innerHTML = currentStep >= 0 ? stepDescs[currentStep] : 'Click a step above to see what happens.';
+  }
+
+  window.showStep = function(n) {
+    currentStep = n;
+    updateStepUI();
+  };
+
+  window.nextStep = function() {
+    currentStep = Math.min(currentStep + 1, 5);
+    updateStepUI();
+  };
+
+  window.prevStep = function() {
+    currentStep = Math.max(currentStep - 1, 0);
+    updateStepUI();
+  };
+
+  window.autoPlay = function() {
+    if (autoInterval) {
+      clearInterval(autoInterval);
+      autoInterval = null;
+      document.getElementById('autoBtn').textContent = 'Auto-play';
+      return;
+    }
+    currentStep = -1;
+    document.getElementById('autoBtn').textContent = 'Stop';
+    autoInterval = setInterval(function() {
+      currentStep++;
+      if (currentStep > 5) {
+        currentStep = 0;
+      }
+      updateStepUI();
+    }, 2500);
+  };
+})();
+</script>
+
+</body>
+</html>

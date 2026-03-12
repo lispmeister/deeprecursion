@@ -7,6 +7,8 @@ series_part: 6
 prev: "The Autoresearch Pattern: A Blueprint for Self-Improving Agents"
 prev_url: https://lispmeister.github.io/deeprecursion/posts/2026-03-11-self-improving-agents.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-11-loom-in-lean.html
+next: "The Prime and the Lab: Recursive Self-Improvement for Coding Agents"
+next_url: 2026-03-12-recursive-self-improvement.md
 ---
 
 # Loom in Lean: Bootstrapping a Verified Self-Improving Agent
@@ -142,4 +144,4 @@ One working organ is worth more than this entire series. Ship it, measure it, ke
 
 ---
 
-**Update (March 12, 2026).** We've since installed [ByteRover](https://clawhub.ai/byteroverinc/byterover) as OpenClaw's memory backend. ByteRover provides structured long-term memory — a hierarchical context tree, automatic memory curation, daily knowledge mining, and context enrichment — out of the box, without a theorem prover. It solves the memory bottleneck this post proposed to address with Lean+QMD, and it's already running. The Lean-as-scaffold approach to memory is abandoned. We'll explore a different avenue for verified self-modification in a future post.
+**Update (March 12, 2026).** We've since installed [ByteRover](https://clawhub.ai/byteroverinc/byterover) as OpenClaw's memory backend. ByteRover provides structured long-term memory — a hierarchical context tree, automatic memory curation, daily knowledge mining, and context enrichment — out of the box, without a theorem prover. It solves the memory bottleneck this post proposed to address with Lean+QMD, and it's already running. The Lean-as-scaffold approach to memory is abandoned. We explore a different avenue in [The Prime and the Lab](2026-03-12-recursive-self-improvement.md).
