@@ -139,3 +139,7 @@ The next move isn't another post. It's the memory service.
 Each step is a falsifiable experiment. If step 1 reveals that the invariants don't fit real conversation, we revise the types. If step 2 reveals that the Lean-QMD boundary adds too much overhead, we simplify the scaffold. If step 3 shows no practical improvement, we stop. A prototype is realistic in one to two weeks.
 
 One working organ is worth more than this entire series. Ship it, measure it, keep or revert.
+
+---
+
+**Update (March 12, 2026).** We've since installed [ByteRover](https://clawhub.ai/byteroverinc/byterover) as OpenClaw's memory backend. ByteRover provides structured long-term memory — a hierarchical context tree, automatic memory curation, daily knowledge mining, and context enrichment — out of the box, without a theorem prover. It solves the memory bottleneck this post proposed to address with Lean+QMD, and it's already running. The Lean-as-scaffold approach to memory is abandoned. We'll explore a different avenue for verified self-modification in a future post.
