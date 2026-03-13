@@ -58,7 +58,7 @@ Acceptance criteria are heterogeneous:
 | **Eval probes** | "`/status` returns valid JSON with `:ready true`" | Prime sends probes |
 | **Benchmarks** | "Round-trip latency under 200ms" | Prime measures |
 
-Prime evaluates using option C: **trust but verify.** The Lab runs its own tests as part of its work. Prime independently re-runs them and adds its own probes. Both must pass for promotion.
+Prime evaluates with a **trust but verify** strategy. The Lab runs its own tests as part of its work. Prime independently re-runs them and adds its own probes. Both must pass for promotion.
 
 ---
 
@@ -88,7 +88,7 @@ container network create loom-net
 container run --name lab-gen-1 --network loom-net ...
 
 # Prime reaches Lab by name
-curl http://lab-gen-1:8402/status
+curl http://lab-gen-1/status
 ```
 
 No port mapping. No IP discovery. The container name is the address.

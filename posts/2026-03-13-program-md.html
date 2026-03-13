@@ -453,7 +453,7 @@
     </tbody>
   </table>
 
-  <p>Prime evaluates using option C: <strong>trust but verify.</strong> The Lab runs its own tests as part of its work. Prime independently re-runs them and adds its own probes. Both must pass for promotion.</p>
+  <p>Prime evaluates with a <strong>trust but verify</strong> strategy. The Lab runs its own tests as part of its work. Prime independently re-runs them and adds its own probes. Both must pass for promotion.</p>
 
   <hr class="divider">
 
@@ -510,7 +510,7 @@ container run --name prime    --network loom-net ...
 container run --name lab-gen-1 --network loom-net ...
 
 # Prime reaches Lab by name &mdash; no IP discovery
-curl http://lab-gen-1:8402/status</code></pre>
+curl http://lab-gen-1/status</code></pre>
 
   <p>No port mapping. No IP discovery. No service registry. The container name <em>is</em> the address. This eliminates an entire class of coordination complexity that would otherwise dominate the Supervisor's code.</p>
 
