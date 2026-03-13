@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The program.md Protocol — Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-13-program-md.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .ref-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .ref-list li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .ref-list li:last-child {
+    border-bottom: none;
+  }
+
+  .ref-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+  }
+
+  /* Flow diagram */
+  .flow-viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  .flow-viz-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .flow-step {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 70px;
+  }
+
+  .flow-step:hover {
+    border-color: var(--accent);
+  }
+
+  .flow-step.active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: #eeeef4;
+  }
+
+  .flow-step.user-step {
+    border-color: var(--amber);
+  }
+
+  .flow-step.user-step.active {
+    border-color: var(--amber);
+    background: rgba(224, 180, 90, 0.1);
+  }
+
+  .flow-step.prime-step {
+    border-color: var(--green);
+  }
+
+  .flow-step.prime-step.active {
+    border-color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .flow-step.lab-step {
+    border-color: var(--cyan);
+  }
+
+  .flow-step.lab-step.active {
+    border-color: var(--cyan);
+    background: rgba(90, 184, 224, 0.1);
+  }
+
+  .flow-step.super-step {
+    border-color: var(--accent);
+  }
+
+  .flow-step.super-step.active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .flow-step.outcome {
+    border-color: var(--green);
+  }
+
+  .flow-step.outcome.active {
+    border-color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .flow-arrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    padding: 0 0.2rem;
+  }
+
+  .flow-desc {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    min-height: 3rem;
+  }
+
+  .flow-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .flow-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .flow-btn:hover {
+    border-color: var(--accent);
+  }
+
+  .flow-legend {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+
+  .flow-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .flow-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    border: 1.5px solid;
+  }
+
+  /* Comparison viz */
+  .compare-viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .compare-viz-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .compare-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1rem;
+  }
+
+  .compare-tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: none;
+    color: var(--text-dim);
+  }
+
+  .compare-tab:first-child {
+    border-radius: 6px 0 0 6px;
+  }
+
+  .compare-tab:last-child {
+    border-radius: 0 6px 6px 0;
+  }
+
+  .compare-tab:not(:first-child) {
+    border-left: none;
+  }
+
+  .compare-tab.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: #eeeef4;
+  }
+
+  .compare-panel {
+    display: none;
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+
+  .compare-panel.active {
+    display: block;
+  }
+
+  .compare-panel pre {
+    margin: 1rem 0;
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 600px) {
+    .flow-steps {
+      gap: 0.25rem;
+    }
+    .flow-step {
+      font-size: 0.65rem;
+      padding: 0.4rem 0.5rem;
+      min-width: 55px;
+    }
+    .flow-arrow {
+      font-size: 0.7rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>The program.md Protocol: Steering Self-Improvement with a Contract</h1>
+  <p class="meta">Agent Architecture &middot; March 13, 2026</p>
+
+  <div class="see-also">
+    Part 8 of a series. See: <a href="2026-03-05-openclaw-self-modification.html">Making OpenClaw Self-Aware</a>, <a href="2026-03-11-self-improving-agents.html">The Autoresearch Pattern</a>, and <a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a>.
+  </div>
+
+  <div class="abstract">Yesterday we had an architecture &mdash; three components and a modification cycle. Today we refined how to steer it. The answer is a file: <code>program.md</code>. A collaboratively written contract between user and agent that defines what to build, how to test it, and what success looks like. This post describes the refined execution model, what changed from the original spec, and why the hardest problem isn't code modification &mdash; it's state continuity across generations.</div>
+
+  <p>The <a href="2026-03-12-recursive-self-improvement.html">previous post</a> described a system where the Prime proposes modifications, tests them in a Lab, and promotes what works. That's the mechanism. But it left a critical question unanswered: <strong>who decides what to improve?</strong></p>
+
+  <p>In Karpathy's <em>autoresearch</em>, the answer is a research program &mdash; a document that defines the experiment, the methodology, and the success criteria. The researcher writes it. The system executes it. We adopt the same pattern.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Changed</div>
+
+  <p>The original spec cast the Prime as both the brain and the worker. It proposed modifications, spawned Labs to test them, judged the results, and promoted or reverted. The user steered by chatting with the Prime and saying things like "make your read-file tool return line numbers."</p>
+
+  <p>This works for small, targeted changes. It fails when improvements require sustained, multi-step effort &mdash; building an LLM provider abstraction layer, redesigning the context manager, adding a new tool with tests. These aren't single-prompt tasks. They need a spec.</p>
+
+  <p>The refined model separates concerns cleanly:</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Role</th><th>Original spec</th><th>Refined spec</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>User</strong></td><td>Chats with Prime, asks for changes</td><td>Collaborates with Prime to write <code>program.md</code></td></tr>
+      <tr><td><strong>Prime</strong></td><td>Worker + judge. Proposes, probes, promotes</td><td>Orchestrator + judge. Generates <code>program.md</code>, spawns Labs, verifies results</td></tr>
+      <tr><td><strong>Lab</strong></td><td>Passive eval server. Runs modified code, answers probes</td><td>Full autonomous agent. Receives <code>program.md</code>, writes code, runs tests, reports status</td></tr>
+      <tr><td><strong>Supervisor</strong></td><td>Container lifecycle + version management</td><td>Container lifecycle + git operations + timeout enforcement</td></tr>
+    </tbody>
+  </table>
+
+  <p>The key shift: <strong>Labs are now full agents.</strong> They run the complete agentic loop with LLM access. They don't just evaluate forms &mdash; they write code, run tests, and iterate autonomously. The Prime doesn't tell them how to implement the change. The <code>program.md</code> tells them what to achieve. The Lab figures out the how.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The program.md Contract</div>
+
+  <p>The <code>program.md</code> is the sole directive for a Lab run. It defines three things:</p>
+
+  <ul>
+    <li><strong>Task spec</strong> &mdash; what to build or improve</li>
+    <li><strong>Acceptance criteria</strong> &mdash; how to know it's done</li>
+    <li><strong>Success conditions</strong> &mdash; what Prime should verify before promoting</li>
+  </ul>
+
+  <p>The user doesn't write it from scratch. The user describes what they want in conversation with Prime. Prime drafts the <code>program.md</code>, presents it for review, refines it based on feedback, and only spawns the Lab once the user approves. This is the control surface.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The analogy:</strong> <code>program.md</code> is to the Lab what a pull request description is to a code reviewer &mdash; it states the intent, the scope, and the definition of done. Except the "reviewer" is the Prime, and it doesn't just read the code. It runs the tests independently.</p>
+  </div>
+
+  <p>Acceptance criteria are heterogeneous. Different tasks need different verification:</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Criteria type</th><th>Example</th><th>Who checks</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Tests</strong></td><td>"All providers in <code>test/loom/llm_provider_test.cljs</code> pass"</td><td>Lab runs them, Prime re-runs independently</td></tr>
+      <tr><td><strong>Eval probes</strong></td><td>"<code>/status</code> returns valid JSON with <code>:ready true</code>"</td><td>Prime sends probes to Lab's eval server</td></tr>
+      <tr><td><strong>Benchmarks</strong></td><td>"Round-trip latency under 200ms"</td><td>Prime measures after Lab reports done</td></tr>
+    </tbody>
+  </table>
+
+  <p>Prime evaluates using option C: <strong>trust but verify.</strong> The Lab runs its own tests as part of its work. Prime independently re-runs them and adds its own probes. Both must pass for promotion.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Execution Flow</div>
+
+  <p>Eight steps, from conversation to promotion. Step through them below.</p>
+
+  <div class="flow-viz">
+    <div class="flow-viz-title">Improvement cycle &mdash; click steps or use controls</div>
+    <div class="flow-steps">
+      <div class="flow-step user-step" data-step="0" onclick="showFlow(0)">Discuss</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step prime-step" data-step="1" onclick="showFlow(1)">Draft</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step user-step" data-step="2" onclick="showFlow(2)">Approve</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step super-step" data-step="3" onclick="showFlow(3)">Spawn</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step lab-step" data-step="4" onclick="showFlow(4)">Execute</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step prime-step" data-step="5" onclick="showFlow(5)">Verify</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step super-step" data-step="6" onclick="showFlow(6)">Promote</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step outcome" data-step="7" onclick="showFlow(7)">Restart</div>
+    </div>
+    <div class="flow-legend">
+      <div class="flow-legend-item"><div class="flow-legend-dot" style="border-color: var(--amber);"></div> User</div>
+      <div class="flow-legend-item"><div class="flow-legend-dot" style="border-color: var(--green);"></div> Prime</div>
+      <div class="flow-legend-item"><div class="flow-legend-dot" style="border-color: var(--cyan);"></div> Lab</div>
+      <div class="flow-legend-item"><div class="flow-legend-dot" style="border-color: var(--accent);"></div> Supervisor</div>
+    </div>
+    <div class="flow-desc" id="flowDesc">Click a step above to see what happens at each stage.</div>
+    <div class="flow-controls">
+      <button class="flow-btn" onclick="prevFlow()">&larr; Prev</button>
+      <button class="flow-btn" onclick="nextFlow()">Next &rarr;</button>
+      <button class="flow-btn" onclick="autoFlow()" id="autoFlowBtn">Auto-play</button>
+    </div>
+  </div>
+
+  <p>The critical property: <strong>boot is the "go" signal.</strong> No coordination protocol between Prime and Lab. The Supervisor creates the container with the repo clone and <code>program.md</code> already in place. When the container starts, the Lab agent reads <code>program.md</code> and begins working. Prime polls <code>/status</code> until the Lab reports done or the 5-minute timeout fires.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Networking</div>
+
+  <p>Apple Containerization on macOS 26 provides <code>vmnet</code>-backed virtual networking. Each container gets a dedicated IP. DNS resolution is built-in.</p>
+
+  <pre><code># Supervisor creates a shared network once
+container network create loom-net
+
+# Every container attaches to it
+container run --name prime    --network loom-net ...
+container run --name lab-gen-1 --network loom-net ...
+
+# Prime reaches Lab by name &mdash; no IP discovery
+curl http://lab-gen-1:8402/status</code></pre>
+
+  <p>No port mapping. No IP discovery. No service registry. The container name <em>is</em> the address. This eliminates an entire class of coordination complexity that would otherwise dominate the Supervisor's code.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Git as the Ledger</div>
+
+  <p>Every generation is a branch. Every promotion is a merge and a tag. The Supervisor handles git operations as part of the container lifecycle.</p>
+
+  <pre><code>main              &mdash;&mdash;&mdash;&mdash;&mdash;*&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;*&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;*&mdash;&mdash;&mdash;&mdash;&gt;
+                        |           |           |
+                   tag: gen-0  tag: gen-1  tag: gen-2
+                        |           |
+                   lab/gen-1   lab/gen-2
+                   (merged)    (merged)
+
+lab/gen-3 (failed, discarded)    lab/gen-4 (in progress)</code></pre>
+
+  <p><code>main</code> always tracks the known-good Prime code. On promote, the Supervisor merges the Lab's branch, tags it, and deletes the branch. On rollback, the branch is discarded. Tags are permanent &mdash; you can roll back to any previous generation, not just N-1.</p>
+
+  <p>The Supervisor also maintains <code>generations.edn</code> &mdash; a ledger of every generation with metadata:</p>
+
+  <pre><code>[{:generation 1
+  :parent 0
+  :branch "lab/gen-1"
+  :program-md-hash "a3f8c2..."
+  :outcome :promoted
+  :created "2026-03-13T14:30:00Z"
+  :completed "2026-03-13T14:34:22Z"
+  :container-id "lab-gen-1"}
+
+ {:generation 2
+  :parent 1
+  :branch "lab/gen-2"
+  :program-md-hash "7b2e41..."
+  :outcome :timeout
+  :created "2026-03-13T15:01:00Z"
+  :completed "2026-03-13T15:06:00Z"
+  :container-id "lab-gen-2"}]</code></pre>
+
+  <p>This file is versioned in git. The full lineage of the system &mdash; what was tried, what worked, what failed &mdash; is recoverable from the repo history alone.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Hard Problem: State</div>
+
+  <p>Code promotion is straightforward &mdash; merge a branch. But a running agent has state: conversation history, task context, accumulated knowledge about the codebase. When Gen N promotes to Gen N+1, the new Prime starts from a fresh process. How does it know what Gen N knew?</p>
+
+  <p>Three sub-problems:</p>
+
+  <ol>
+    <li><strong>Serialize.</strong> Before promotion, snapshot the outgoing Prime's state as EDN.</li>
+    <li><strong>Load.</strong> When the new Prime boots, hydrate from the snapshot.</li>
+    <li><strong>Evolve.</strong> If the new Prime changed its own state schema, the old snapshot may not fit.</li>
+  </ol>
+
+  <p>Problem 3 is where it gets interesting. If Gen N stores conversation history as a flat vector and Gen N+1 restructures it into a tree, the snapshot is useless. Full schema migration &mdash; transforming old data into new shapes &mdash; is a known-hard problem even in traditional databases. In a self-modifying system, the schema itself is part of the mutable surface.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>v0 approach:</strong> state as EDN with a version tag. If the schema doesn't match, start fresh. The git tag preserves the old state for inspection &mdash; nothing is lost, but continuity may be interrupted. Proper schema migration is deferred until the state format stabilizes. This is a deliberate tradeoff: ship the cycle first, solve continuity second.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">What Changed from the Original Spec</div>
+
+  <p>A side-by-side comparison of the two architectures. Toggle to see the differences.</p>
+
+  <div class="compare-viz">
+    <div class="compare-viz-title">Architecture comparison &mdash; select view</div>
+    <div class="compare-tabs">
+      <div class="compare-tab active" data-tab="original" onclick="showTab('original')">Original</div>
+      <div class="compare-tab" data-tab="refined" onclick="showTab('refined')">Refined</div>
+      <div class="compare-tab" data-tab="diff" onclick="showTab('diff')">What changed</div>
+    </div>
+
+    <div class="compare-panel active" data-panel="original">
+      <p><strong>Prime</strong> is the brain and the worker. It proposes modifications by generating modified <code>.cljs</code> files. The <strong>Lab</strong> is a passive eval server &mdash; ~50 lines of code that accepts forms over TCP and returns results. Prime probes the Lab by sending test forms. The <strong>Supervisor</strong> manages containers and a <code>versions/</code> directory. User chats with Prime to request changes.</p>
+      <pre><code>User &rarr; "improve read-file" &rarr; Prime generates patch
+  &rarr; Supervisor boots Lab with patched code
+  &rarr; Prime sends eval probes to Lab
+  &rarr; Prime decides promote/revert</code></pre>
+    </div>
+
+    <div class="compare-panel" data-panel="refined">
+      <p><strong>Prime</strong> is the orchestrator. It collaborates with the user to produce <code>program.md</code>, spawns Labs, and independently verifies results. The <strong>Lab</strong> is a full autonomous agent with LLM access &mdash; it reads <code>program.md</code> and implements the feature end-to-end. The <strong>Supervisor</strong> manages containers, git branches/tags, <code>generations.edn</code>, and enforces a 5-minute timeout.</p>
+      <pre><code>User + Prime &rarr; write program.md
+  &rarr; Supervisor boots Lab with full repo + program.md
+  &rarr; Lab works autonomously (writes code, runs tests)
+  &rarr; Prime polls /status, then verifies independently
+  &rarr; Promote: merge branch, tag, restart Prime</code></pre>
+    </div>
+
+    <div class="compare-panel" data-panel="diff">
+      <ul>
+        <li><strong>Lab capability:</strong> passive eval server &rarr; full autonomous agent with LLM access</li>
+        <li><strong>Steering:</strong> ad-hoc chat prompts &rarr; collaboratively refined <code>program.md</code></li>
+        <li><strong>Version tracking:</strong> <code>versions/</code> directory &rarr; git branches + tags + <code>generations.edn</code></li>
+        <li><strong>Acceptance:</strong> Prime probes only &rarr; trust but verify (Lab self-tests + Prime re-checks)</li>
+        <li><strong>Timeout:</strong> none &rarr; 5-minute hard limit enforced by Supervisor</li>
+        <li><strong>Networking:</strong> unspecified &rarr; <code>loom-net</code> with DNS resolution by container name</li>
+        <li><strong>Rollback:</strong> N-1 only (versions dir) &rarr; any generation via git tags</li>
+        <li><strong>State:</strong> not addressed &rarr; EDN snapshots with version tag, fresh-start fallback</li>
+        <li><strong>Failure:</strong> not addressed &rarr; retry with same <code>program.md</code> (v0), auto-refine (planned)</li>
+      </ul>
+    </div>
+  </div>
+
+  <p>The eval server from the original spec survives. Prime still uses it for eval probes &mdash; it's one of the acceptance criteria types. But the Lab is no longer <em>just</em> an eval server. It's an agent that happens to also expose an eval server for external verification.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What's Next</div>
+
+  <p>The implementation plan has six phases. Phase 1a (self-hosted ClojureScript eval) is done &mdash; 9 tests, 17 assertions passing. Next up:</p>
+
+  <ol>
+    <li><strong>Container image.</strong> Boot ClojureScript in an Apple container. Measure startup time.</li>
+    <li><strong>Eval server + client.</strong> TCP round-trip with Malli-validated EDN.</li>
+    <li><strong>Supervisor.</strong> Container lifecycle, git operations, <code>loom-net</code> networking, <code>generations.edn</code>.</li>
+    <li><strong>Agent loop.</strong> Claude API client, five tools, the main loop.</li>
+    <li><strong>The <code>program.md</code> cycle.</strong> User &rarr; Prime &rarr; <code>program.md</code> &rarr; Lab &rarr; verify &rarr; promote.</li>
+    <li><strong>First self-modification.</strong> The proof of concept.</li>
+  </ol>
+
+  <p>Each phase is a falsifiable experiment. If container boot time exceeds 10 seconds, switch to pre-compiled. If Apple Containerization is too unstable, fall back to UTM. If the agent can't complete a full cycle, debug each stage independently.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The refined bet:</strong> the hardest part isn't getting the agent to modify code. It's getting the cycle right &mdash; the handoff from user intent to <code>program.md</code> to autonomous Lab to verified promotion. Get the cycle right and the modifications follow.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">References</div>
+
+  <ul class="ref-list">
+    <li><a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a> &mdash; Original architecture spec for the three-component system. This post refines the execution model described there. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-11-self-improving-agents.html">The Autoresearch Pattern</a> &mdash; Karpathy's autoresearch as a blueprint for self-improvement: three separations, keep/revert, fixed points. The <code>program.md</code> pattern derives from this. <span class="ref-tag">series</span></li>
+    <li><a href="https://github.com/apple/container">Apple Containerization</a> &mdash; VM-per-container isolation on macOS 26. Custom networks via <code>container network create</code> with built-in DNS resolution. <span class="ref-tag">containers</span></li>
+    <li><a href="https://github.com/metosin/malli">Malli</a> &mdash; Data-driven schema library. Schemas as EDN data &mdash; the fixed-point contracts between Prime, Lab, and Supervisor. <span class="ref-tag">schemas</span></li>
+    <li><a href="https://mariozechner.at/posts/2025-11-30-pi-coding-agent/">Pi Coding Agent</a> (Mario Zechner) &mdash; Radical minimalism: 4 tools, &lt;1000 token prompt. Our Lab agent inherits this philosophy. <span class="ref-tag">agent design</span></li>
+  </ul>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  // Flow diagram
+  var currentFlow = -1;
+  var autoInterval = null;
+
+  var flowDescs = [
+    '<strong>1. Discuss.</strong> The user describes what they want to improve to the Prime: "Add an abstraction layer for LLM providers so we can swap between Claude and other APIs." This is a conversation, not a command. The user provides intent and constraints. Prime asks clarifying questions.',
+    '<strong>2. Draft.</strong> Prime generates a <code>program.md</code>: task spec, acceptance criteria, and success conditions. It presents the draft to the user. "Here\'s what I\'ll ask the Lab to build. The acceptance criteria are: tests for each provider pass, and a round-trip call completes in under 500ms. Does this look right?"',
+    '<strong>3. Approve.</strong> The user reviews the <code>program.md</code>, suggests changes ("add a test for error handling when the API key is invalid"), and approves when satisfied. This is the last human checkpoint before autonomous execution begins.',
+    '<strong>4. Spawn.</strong> Prime tells the Supervisor to create a Lab. The Supervisor clones the full repo onto a <code>lab/gen-N</code> branch, places <code>program.md</code> in the repo, creates a container on <code>loom-net</code>, and starts it. The Lab boots and auto-starts working. A 5-minute timeout begins.',
+    '<strong>5. Execute.</strong> The Lab agent reads <code>program.md</code> and works autonomously. It writes code, runs tests, iterates. It commits to its generation branch before executing new code that might break \u2014 the branch is its audit trail. It exposes <code>/status</code> for monitoring. Prime polls periodically.',
+    '<strong>6. Verify.</strong> When <code>/status</code> reports done (or the timeout fires), Prime independently evaluates. It pulls the Lab\'s branch, re-runs the test suite, sends eval probes to the Lab\'s eval server, checks benchmarks. Both the Lab\'s self-report and Prime\'s independent checks must pass. Trust but verify.',
+    '<strong>7. Promote.</strong> If verification passes, Prime tells the Supervisor to promote. The Supervisor merges <code>lab/gen-N</code> into <code>main</code>, tags it <code>gen-N</code>, deletes the Lab branch, serializes the Prime\'s state, and prepares the new version. If verification fails, the Lab branch is discarded and Prime can retry.',
+    '<strong>8. Restart.</strong> The Supervisor stops the current Prime, boots the new one from the promoted code on <code>main</code>, loads the serialized state. The improved agent is live. The next <code>program.md</code> cycle can begin. Every generation is tagged \u2014 rollback to any previous version is one <code>git checkout</code> away.'
+  ];
+
+  function updateFlowUI() {
+    document.querySelectorAll('.flow-step').forEach(function(s) {
+      s.classList.remove('active');
+      if (parseInt(s.dataset.step) === currentFlow) s.classList.add('active');
+    });
+    document.getElementById('flowDesc').innerHTML = currentFlow >= 0 ? flowDescs[currentFlow] : 'Click a step above to see what happens at each stage.';
+  }
+
+  window.showFlow = function(n) { currentFlow = n; updateFlowUI(); };
+  window.nextFlow = function() { currentFlow = Math.min(currentFlow + 1, 7); updateFlowUI(); };
+  window.prevFlow = function() { currentFlow = Math.max(currentFlow - 1, 0); updateFlowUI(); };
+
+  window.autoFlow = function() {
+    if (autoInterval) {
+      clearInterval(autoInterval);
+      autoInterval = null;
+      document.getElementById('autoFlowBtn').textContent = 'Auto-play';
+      return;
+    }
+    currentFlow = -1;
+    document.getElementById('autoFlowBtn').textContent = 'Stop';
+    autoInterval = setInterval(function() {
+      currentFlow++;
+      if (currentFlow > 7) currentFlow = 0;
+      updateFlowUI();
+    }, 3000);
+  };
+
+  // Comparison tabs
+  window.showTab = function(key) {
+    document.querySelectorAll('.compare-tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.tab === key);
+    });
+    document.querySelectorAll('.compare-panel').forEach(function(p) {
+      p.classList.toggle('active', p.dataset.panel === key);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

@@ -6,6 +6,8 @@ series: "OpenClaw/Loom"
 series_part: 7
 prev: "Loom in Lean: Bootstrapping a Verified Self-Improving Agent"
 prev_url: 2026-03-11-loom-in-lean.md
+next: "The program.md Protocol: Steering Self-Improvement with a Contract"
+next_url: 2026-03-13-program-md.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-12-recursive-self-improvement.html
 ---
 
@@ -285,3 +287,7 @@ Each step is a falsifiable experiment. A working prototype is realistic in two t
 - [Build Your First 24/7 Agentic Loop](https://wezzard.com/post/2025/09/build-your-first-agentic-loop-9d22) (Wezzard) — Contract-driven evaluator/executor architecture
 - [Malli](https://github.com/metosin/malli) (Metosin) — Data-driven schema library for Clojure/ClojureScript
 - [ClojureScript Self-Hosting Guide](https://clojurescript.org/guides/self-hosting) — Runtime compilation and evaluation
+
+---
+
+*Continue reading: [The program.md Protocol: Steering Self-Improvement with a Contract](2026-03-13-program-md.md)*
