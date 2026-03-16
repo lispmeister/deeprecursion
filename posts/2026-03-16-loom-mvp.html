@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>First Light: Loom's Self-Modification Pipeline in 2,214 Lines &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-16-loom-mvp.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  ol li {
+    margin-bottom: 0.4rem;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .ref-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .ref-list li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .ref-list li:last-child {
+    border-bottom: none;
+  }
+
+  .ref-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+  }
+
+  /* Generation timeline */
+  .gen-timeline {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .gen-timeline-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .gen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .gen-cell {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.7rem;
+    position: relative;
+  }
+
+  .gen-cell:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .gen-cell.active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .gen-cell .gen-num {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #eeeef4;
+  }
+
+  .gen-cell .gen-outcome {
+    font-size: 0.55rem;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .gen-cell.done { border-color: var(--green); }
+  .gen-cell.done .gen-outcome { color: var(--green); }
+  .gen-cell.done.active { background: var(--green-dim); border-color: var(--green); }
+
+  .gen-cell.timeout { border-color: var(--amber); }
+  .gen-cell.timeout .gen-outcome { color: var(--amber); }
+  .gen-cell.timeout.active { background: rgba(224, 180, 90, 0.1); border-color: var(--amber); }
+
+  .gen-cell.failed { border-color: var(--red); }
+  .gen-cell.failed .gen-outcome { color: var(--red); }
+  .gen-cell.failed.active { background: rgba(224, 90, 111, 0.1); border-color: var(--red); }
+
+  .gen-detail {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    min-height: 4rem;
+  }
+
+  .gen-detail-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .gen-legend {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+
+  .gen-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .gen-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    border: 1.5px solid;
+  }
+
+  .gen-phase-label {
+    grid-column: 1 / -1;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0 0.25rem;
+    border-top: 1px solid var(--border);
+    margin-top: 0.25rem;
+  }
+
+  .gen-phase-label:first-child {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  /* Sequence diagram */
+  .seq-diagram-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 2rem 0;
+    overflow-x: auto;
+  }
+
+  .seq-diagram-wrap svg {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+
+  .seq-diagram-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+  }
+
+  @media (max-width: 600px) {
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .gen-grid {
+      grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>First Light: Loom's Self-Modification Pipeline in 2,214 Lines</h1>
+  <p class="meta">Agent Architecture &middot; March 16, 2026</p>
+
+  <div class="see-also">
+    Part 9 of a series. Previous: <a href="2026-03-13-program-md.html">The program.md Protocol</a>. See also: <a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a>, <a href="2026-03-11-self-improving-agents.html">The Autoresearch Pattern</a>.
+  </div>
+
+  <div class="abstract">Three posts ago we had a spec. Two posts ago we had a protocol. Now we have a working system. Loom's MVP is complete: 2,214 lines of ClojureScript, 90 tests, 17 generations run, and a stable pipeline that spawns an autonomous Lab agent in an Apple container, lets it work, verifies the result, and promotes or rolls back. This post is the field report &mdash; what we built, what broke, what we learned, and what's still missing.</div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value">2,214</div>
+      <div class="stat-label">Lines of source</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">90</div>
+      <div class="stat-label">Tests passing</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">17</div>
+      <div class="stat-label">Generations run</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">5/5</div>
+      <div class="stat-label">Stable run (latest)</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">The Journey: 17 Generations</div>
+
+  <p>Building a self-modifying agent isn't a single breakthrough moment. It's a sequence of failures, each one revealing something the spec didn't anticipate. We ran 17 generations. Explore them below.</p>
+
+  <div class="gen-timeline">
+    <div class="gen-timeline-title">Generation history &mdash; click a generation for details</div>
+    <div class="gen-legend">
+      <div class="gen-legend-item"><div class="gen-legend-dot" style="border-color: var(--green);"></div> Done</div>
+      <div class="gen-legend-item"><div class="gen-legend-dot" style="border-color: var(--amber);"></div> Timeout</div>
+      <div class="gen-legend-item"><div class="gen-legend-dot" style="border-color: var(--red);"></div> Failed</div>
+    </div>
+    <div class="gen-grid" id="genGrid"></div>
+    <div class="gen-detail" id="genDetail">Click a generation above to see what happened.</div>
+  </div>
+
+  <p>The first twelve generations were a debugging marathon. Gen-1 was the proof of concept &mdash; a Lab that added line numbers to the <code>read_file</code> tool &mdash; but getting there required manual orchestration and exposed fragile git operations. Gens 2&ndash;5 failed outright: missing API keys, broken container networking, build artifacts not copied correctly. Gens 6&ndash;9 introduced timeouts as the default failure mode &mdash; Labs that booted fine but couldn't complete work before the 5-minute (later 10-minute) deadline.</p>
+
+  <p>The turning point came between gen-9 and gen-10. Five critical bugs were identified and fixed in a single hardening session:</p>
+
+  <ol>
+    <li><strong>API key injection.</strong> The Supervisor wasn't forwarding <code>ANTHROPIC_API_KEY</code> into Lab containers. Labs booted, tried to call Claude, and silently hung.</li>
+    <li><strong>Branch propagation.</strong> Lab commits were stranded in the container's cloned repo. The Supervisor needed an explicit <code>git fetch</code> to pull the branch back into the main repo for Prime's verification.</li>
+    <li><strong>Port allocation.</strong> Multiple Labs on the same port caused container startup failures. Fixed with deterministic port mapping: <code>18400 + gen-num</code>.</li>
+    <li><strong>Timeout accounting.</strong> The hard timeout timer started at spawn time, not container-ready time. Boot overhead ate into work time.</li>
+    <li><strong>Status detection.</strong> Polling <code>/status</code> used a single HTTP request without retry. If the Lab wasn't ready yet, the Supervisor concluded it had failed.</li>
+  </ol>
+
+  <p>After hardening, gens 13&ndash;17 ran back-to-back with zero failures. Five for five. Average duration: 36 seconds. The pipeline works.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Generation Cycle</div>
+
+  <p>The sequence diagram below shows exactly what happens during a single generation &mdash; from task definition through to promote or rollback. Six phases, four actors, one complete loop.</p>
+
+  <div class="seq-diagram-wrap">
+    <div class="seq-diagram-title">Full generation lifecycle &mdash; scroll to explore</div>
+    <img src="../assets/images/loom-generation-sequence.svg" alt="Sequence diagram showing the full Loom generation lifecycle: task definition, lab spawn, autonomous execution, completion detection, verification, and promote/rollback" style="width: 100%; height: auto; border-radius: 4px; background: white; padding: 0.5rem;">
+  </div>
+
+  <p>The key property: <strong>the Lab is fully autonomous.</strong> It reads <code>program.md</code>, enters an agentic loop (Claude API &rarr; tool calls &rarr; repeat), commits its work, and reports done. Prime doesn't guide the Lab. It polls <code>/status</code> and waits. When the Lab finishes, Prime pulls the branch and verifies independently: <code>git diff</code> to see what changed, then <code>npm test</code> to confirm nothing broke.</p>
+
+  <p>The Supervisor orchestrates infrastructure &mdash; cloning repos, creating containers, managing branches and tags, enforcing timeouts &mdash; but makes no decisions about the work itself. It's plumbing, not policy.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Gen-1 Actually Did</div>
+
+  <p>The first real self-modification was modest by design: add line numbers to the <code>read_file</code> tool output. The <code>program.md</code> spelled it out precisely:</p>
+
+  <pre><code># Task: Add line numbers to read_file tool output
+
+In src/loom/agent/tools.cljs, modify the read-file function.
+After reading file content, split into lines and prepend
+1-based line numbers. Format: right-aligned number padded
+to width of max line number, tab, then line content.
+
+Also update test expectations in test/loom/tools_test.cljs
+to match the new output format.
+
+## IMPORTANT
+- Do NOT run npm test or npx shadow-cljs.
+  They are not available in the container.
+- Just make the edits and let the auto-commit handle the rest.</code></pre>
+
+  <p>The Lab read the program, opened both files, made the edits, and committed. Prime pulled the branch, ran the test suite, confirmed all 90 tests passed, and promoted. The diff: 12 lines changed across two files. Total time: under 40 seconds.</p>
+
+  <p>It's not impressive as a code change. It's impressive as a <em>cycle</em>. An autonomous agent running in a VM wrote code, and a second agent independently verified that code worked before merging it. No human touched any file between spawn and promote.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Architecture Review: An Honest Assessment</div>
+
+  <p>After reaching stability, we ran a full architecture review of the 2,214-line codebase. The findings were mixed &mdash; strong fundamentals, but real gaps in verification and observability.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The codebase:</strong> 19 source files, 13 test files, ~1:1 test-to-source ratio by LOC. Only dependencies: Malli (schemas) and shadow-cljs (compilation). No frameworks.</p>
+  </div>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Dimension</th><th>Status</th><th>Gap</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Core loop</strong></td><td style="color: var(--green);">Working</td><td>&mdash;</td></tr>
+      <tr><td><strong>Self-modification proof</strong></td><td style="color: var(--amber);">Partial</td><td>Only trivial tasks proven; no agent code modification promoted</td></tr>
+      <tr><td><strong>Test coverage</strong></td><td style="color: var(--green);">Strong</td><td>No integration test with real containers</td></tr>
+      <tr><td><strong>Dead code</strong></td><td style="color: var(--amber);">~7%</td><td>Eval client/server compiled but never called (146 LOC)</td></tr>
+      <tr><td><strong>Observability</strong></td><td style="color: var(--amber);">Basic</td><td>No diff visibility, no per-generation metrics</td></tr>
+      <tr><td><strong>Code legibility</strong></td><td style="color: var(--green);">Good</td><td><code>supervisor/http.cljs</code> at 307 lines does too many things</td></tr>
+    </tbody>
+  </table>
+
+  <p>Three findings matter most:</p>
+
+  <p><strong>1. Verification is too shallow.</strong> <code>verify_generation</code> runs <code>npm test</code> &mdash; that's it. No eval probes, no benchmarks, no code quality checks. For trivial file operations this is fine. For actual self-modification &mdash; rewriting the agentic loop, changing the context manager &mdash; a Lab could introduce a subtle regression that passes all 90 tests. Prime promotes blindly if tests are green.</p>
+
+  <p><strong>2. No visibility into what changed.</strong> The verification flow didn't include <code>git diff</code>. Prime had no idea <em>what</em> the Lab actually modified &mdash; only whether tests passed. This was fixed during hardening (diff stats and truncated diff now included), but the deeper issue remains: Prime has no semantic understanding of changes, only syntactic pass/fail.</p>
+
+  <p><strong>3. Three Malli schemas are decorative.</strong> <code>Proposal</code>, <code>ProbeResult</code>, and <code>Verdict</code> &mdash; declared as "fixed-point contracts" in the README &mdash; are defined but never validated. The real contract is <code>POST /spawn</code> with a <code>program_md</code> string and <code>POST /promote</code> with a generation number. Plain JSON, unvalidated. The conceptual framework of "mutable code + immutable contracts" depends on those contracts being load-bearing. Right now they're aspirational.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What's Working</div>
+
+  <ul>
+    <li><strong>Clean separation of concerns.</strong> Agent, Supervisor, Lab are genuinely independent. Different build targets, different runtime environments, no shared mutable state.</li>
+    <li><strong>Minimal dependencies.</strong> The entire system uses Malli for schemas and shadow-cljs for compilation. No HTTP frameworks, no ORMs, no middleware. Node's built-in <code>http</code> module handles all endpoints.</li>
+    <li><strong>Git as source of truth.</strong> Branches, tags, and <code>generations.edn</code> make the full history recoverable from the repo alone. Every generation is a branch. Every promotion is a tag. Rollback to any generation is one <code>git checkout</code> away.</li>
+    <li><strong>Container isolation.</strong> Labs run in Apple Containerization VMs with no shared state. A bad modification can't escape. A malicious <code>eval-str</code> can't touch the host or Prime.</li>
+    <li><strong>Compact codebase.</strong> 2,214 LOC for a working self-modifying agent is lean. The test suite (2,100 LOC, 90 tests) is nearly as large as the source.</li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="section-header">What's Missing</div>
+
+  <p>The MVP proves the pipeline works. It doesn't prove recursive self-improvement. Three things are missing:</p>
+
+  <p><strong>No generation has modified agent code.</strong> Every successful <code>program.md</code> has been a trivial operation &mdash; add a comment, create a text file, count source files. Gen-1 (add line numbers to <code>read_file</code>) is the only one that touched agent functionality, and that was manually orchestrated. We haven't demonstrated that a Lab can make a meaningful change to the agent's own behavior and have Prime verify and promote it.</p>
+
+  <p><strong>Prime has no agency.</strong> It's a chatbot with tools. The user writes <code>program.md</code>, tells Prime to execute it, Prime mechanically spawns/verifies/promotes. There's no decision-making, no prioritization, no self-assessment. The "self" in self-improvement is the user's judgment, not the agent's.</p>
+
+  <p><strong>No fitness function.</strong> Self-improvement requires measuring improvement. We track timing and outcome (done/failed/timeout) but not: test count, code coverage, token efficiency, tool call counts. Without quantitative metrics across generations, "improvement" is unmeasurable.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Next: Closing the Recursive Loop</div>
+
+  <p>The MVP proves the pipeline works (human writes <code>program.md</code> &rarr; Lab executes &rarr; verify &rarr; promote/rollback). The next step is making it genuinely recursive: <strong>Prime autonomously proposes and executes its own next improvement.</strong></p>
+
+  <p>This requires a <em>reflect</em> step. After every promote or rollback, Prime enters a reflection phase:</p>
+
+  <ol>
+    <li>Analyze the generation report &mdash; what changed, outcome, timing, metrics</li>
+    <li>Read <code>priorities.md</code> for user-directed goals</li>
+    <li>Review the current codebase state &mdash; test results, architecture gaps, open tasks</li>
+    <li>Generate the next <code>program.md</code> &mdash; the smallest change that most improves the target metric</li>
+    <li>Spawn a new Lab and continue the loop</li>
+  </ol>
+
+  <p>But reflect without data is hallucination. Three prerequisites before implementing it:</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr><th>Prerequisite</th><th>Why</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Enrich generation reports</strong></td><td>Reflect needs token counts, diff stats, test pass/fail, duration breakdown</td><td>Not implemented</td></tr>
+      <tr><td><strong>Define fitness function</strong></td><td>What must improve? Test count, coverage, token efficiency, user-defined?</td><td>Not implemented</td></tr>
+      <tr><td><strong>Create <code>priorities.md</code></strong></td><td>User-authored file Prime reads during reflect to know what to work on</td><td>Not implemented</td></tr>
+    </tbody>
+  </table>
+
+  <p>The loop also needs safety valves: a generation cap (<code>LOOM_MAX_GENERATIONS</code>), a token budget, fitness plateau detection (no improvement over N generations), and human interrupt (SIGINT gracefully stops the loop).</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0"><strong>The compelling demo:</strong> "I pointed it at itself and walked away. Here's what it improved." We're one milestone away. The pipeline is proven. The reflect step is next.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">Known Constraints</div>
+
+  <ul>
+    <li><strong>Labs cannot self-test.</strong> Shadow-cljs compilation takes ~25 seconds inside the container VM, eating most of the timeout budget. Labs must not run <code>npm test</code> &mdash; Prime's <code>verify_generation</code> runs tests host-side after the Lab reports done.</li>
+    <li><strong>Tailscale breaks containers.</strong> Apple Containerization's <code>vmnet</code> routing fails with Tailscale active. Disconnect VPN before running Labs.</li>
+    <li><strong>macOS 26 + Apple Silicon only.</strong> Apple Containerization requires macOS 26 on Apple Silicon. No Linux, no Intel. A subprocess-based fallback would broaden accessibility but isn't planned for v0.</li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="section-header">References</div>
+
+  <ul class="ref-list">
+    <li><a href="2026-03-13-program-md.html">The program.md Protocol</a> &mdash; The steering mechanism: how <code>program.md</code> defines tasks, acceptance criteria, and success conditions. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a> &mdash; Original architecture spec for the three-component system. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-11-self-improving-agents.html">The Autoresearch Pattern</a> &mdash; Karpathy's autoresearch as a blueprint. Three separations, keep/revert, fixed points. <span class="ref-tag">series</span></li>
+    <li><a href="https://github.com/apple/container">Apple Containerization</a> &mdash; VM-per-container isolation on macOS 26. Custom networks with built-in DNS. <span class="ref-tag">containers</span></li>
+    <li><a href="https://github.com/metosin/malli">Malli</a> &mdash; Data-driven schema library. Schemas as EDN &mdash; the fixed-point contracts. <span class="ref-tag">schemas</span></li>
+    <li><a href="https://mariozechner.at/posts/2025-11-30-pi-coding-agent/">Pi Coding Agent</a> (Mario Zechner) &mdash; Radical minimalism: 4 tools, &lt;1000 token prompt. Lab agent inherits this philosophy. <span class="ref-tag">agent design</span></li>
+  </ul>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  var generations = [
+    { gen: 1, outcome: 'done', duration: null, task: 'Add line numbers to read_file tool', detail: 'The first real self-modification. Lab edited tools.cljs and tools_test.cljs, adding 1-based line numbers to read_file output. 12 lines changed. Prime verified all 90 tests passed and promoted. Manually orchestrated but proved the full cycle works.' },
+    { gen: 2, outcome: 'failed', duration: null, task: 'Early pipeline test', detail: 'Container booted but Lab couldn\'t reach the Claude API. ANTHROPIC_API_KEY was not being forwarded into the container environment. The Lab hung silently, waiting for a response that never came.' },
+    { gen: 3, outcome: 'failed', duration: null, task: 'Early pipeline test', detail: 'Container networking misconfigured. The Supervisor created the container but didn\'t attach it to loom-net. Prime couldn\'t poll /status because DNS resolution failed.' },
+    { gen: 4, outcome: 'failed', duration: null, task: 'Early pipeline test', detail: 'lab-worker.js not copied to workspace. The container booted Node.js but had no entry point to run. Immediate exit with code 1.' },
+    { gen: 5, outcome: 'failed', duration: null, task: 'Early pipeline test', detail: 'Build artifact mismatch. The release build of lab-worker.js was stale \u2014 it referenced modules that had been renamed. The Lab crashed on import.' },
+    { gen: 6, outcome: 'timeout', duration: 301, task: 'Pipeline test', detail: 'Lab booted and started working, but the 5-minute timeout fired before completion. The Lab was making Claude API calls successfully but the task was too complex for the time budget. First evidence that the pipeline plumbing worked.' },
+    { gen: 7, outcome: 'failed', duration: null, task: 'Pipeline test', detail: 'Port collision. Two Lab containers tried to bind the same host port. Second container failed to start. Led to the deterministic port mapping fix: 18400 + gen-num.' },
+    { gen: 8, outcome: 'timeout', duration: 301, task: 'Pipeline test', detail: 'Same program.md as gen-6, retried after bug fixes. Lab completed its work but the status detection missed the transition from running to done \u2014 the single poll request happened during a brief restart window.' },
+    { gen: 9, outcome: 'timeout', duration: 601, task: 'Pipeline test (10 min timeout)', detail: 'Timeout extended to 10 minutes. Lab committed its work successfully but the Supervisor didn\'t fetch the branch from the clone \u2014 Prime couldn\'t find it for verification. Branch propagation bug identified.' },
+    { gen: 10, outcome: 'done', duration: 39, task: 'Trivial file operation', detail: 'First fully automated success after the hardening session. Simple task: create a text file. All five bug fixes applied. Spawn \u2192 execute \u2192 detect \u2192 fetch \u2192 cleanup completed in 39 seconds.' },
+    { gen: 11, outcome: 'done', duration: 43, task: 'Trivial file operation', detail: 'Second automated success. Confirmed gen-10 wasn\'t a fluke. Same pipeline, different task. 43 seconds end-to-end.' },
+    { gen: 12, outcome: 'done', duration: null, task: 'File operation', detail: 'Third consecutive success. Pipeline reliability increasing. Generation reports starting to be saved consistently.' },
+    { gen: 13, outcome: 'done', duration: 29, task: 'Add version comment to schemas', detail: 'Start of the stable 5/5 run. Task: add a two-line comment to schemas.cljs. Lab read the file, added the comment, committed. 29 seconds. No issues.' },
+    { gen: 14, outcome: 'done', duration: 28, task: 'Trivial edit', detail: 'Fastest generation. 28 seconds from spawn to completion. Pipeline overhead is minimal \u2014 most time is the Lab\'s Claude API calls, not infrastructure.' },
+    { gen: 15, outcome: 'done', duration: 33, task: 'Trivial edit', detail: '33 seconds. Consistent with gen-13 and gen-14. The pipeline is deterministic: same class of task, same order of magnitude duration.' },
+    { gen: 16, outcome: 'done', duration: 53, task: 'Trivial edit', detail: '53 seconds \u2014 the outlier in the stable run. Likely due to Claude API latency variation, not pipeline issues. Still well within the 10-minute timeout.' },
+    { gen: 17, outcome: 'done', duration: 38, task: 'Trivial edit', detail: 'Final generation of the stable run. 38 seconds. Five for five, zero failures, zero timeouts. Pipeline proven stable.' }
+  ];
+
+  var grid = document.getElementById('genGrid');
+  var detail = document.getElementById('genDetail');
+
+  // Build grid with phase labels
+  var phases = [
+    { label: 'Early debugging (manual orchestration)', gens: [1, 2, 3, 4, 5] },
+    { label: 'Timeout era (pipeline plumbing works, edges don\'t)', gens: [6, 7, 8, 9] },
+    { label: 'Post-hardening (5 critical bugs fixed)', gens: [10, 11, 12] },
+    { label: 'Stable run (5/5 zero failures)', gens: [13, 14, 15, 16, 17] }
+  ];
+
+  phases.forEach(function(phase) {
+    var label = document.createElement('div');
+    label.className = 'gen-phase-label';
+    label.textContent = phase.label;
+    grid.appendChild(label);
+
+    phase.gens.forEach(function(genNum) {
+      var g = generations.find(function(x) { return x.gen === genNum; });
+      var cell = document.createElement('div');
+      cell.className = 'gen-cell ' + g.outcome;
+      cell.dataset.gen = g.gen;
+      cell.innerHTML = '<span class="gen-num">' + g.gen + '</span><span class="gen-outcome">' + g.outcome + '</span>';
+      cell.addEventListener('click', function() {
+        document.querySelectorAll('.gen-cell').forEach(function(c) { c.classList.remove('active'); });
+        cell.classList.add('active');
+        var meta = 'Gen ' + g.gen + ' \u00b7 ' + g.outcome;
+        if (g.duration) meta += ' \u00b7 ' + g.duration + 's';
+        meta += ' \u00b7 ' + g.task;
+        detail.innerHTML = '<div class="gen-detail-meta">' + meta + '</div>' + g.detail;
+      });
+      grid.appendChild(cell);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

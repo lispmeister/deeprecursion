@@ -1,4 +1,189 @@
 ---
+title: "First Light: Loom's Self-Modification Pipeline in 2,214 Lines"
+date: 2026-03-16
+meta: "Agent Architecture"
+series: "Self-Improving Agents"
+series_part: 9
+prev: "The program.md Protocol: Steering Self-Improvement with a Contract"
+prev_url: 2026-03-13-program-md.md
+url: https://lispmeister.github.io/deeprecursion/posts/2026-03-16-loom-mvp.html
+---
+
+# First Light: Loom's Self-Modification Pipeline in 2,214 Lines
+
+Three posts ago we had a spec. Two posts ago we had a protocol. Now we have a working system. Loom's MVP is complete: 2,214 lines of ClojureScript, 90 tests, 17 generations run, and a stable pipeline that spawns an autonomous Lab agent in an Apple container, lets it work, verifies the result, and promotes or rolls back. This post is the field report — what we built, what broke, what we learned, and what's still missing.
+
+| Metric | Value |
+|--------|-------|
+| Lines of source | 2,214 (19 files) |
+| Tests passing | 90 (13 files, 2,100 LOC) |
+| Generations run | 17 |
+| Latest stable run | 5/5 (gen-13 through gen-17) |
+
+---
+
+## The Journey: 17 Generations
+
+Building a self-modifying agent isn't a single breakthrough moment. It's a sequence of failures, each one revealing something the spec didn't anticipate.
+
+**Early debugging (gen-1 through gen-5).** Gen-1 was the proof of concept — a Lab that added line numbers to the `read_file` tool — but getting there required manual orchestration. Gens 2–5 failed outright: missing API keys, broken container networking, build artifacts not copied correctly.
+
+**Timeout era (gen-6 through gen-9).** Labs booted fine but couldn't complete work before the deadline. These failures proved the pipeline plumbing worked — containers started, Labs called Claude, code was written — but the edges were rough. Status detection missed transitions. Branches got stranded in cloned repos.
+
+**Post-hardening (gen-10 through gen-12).** Five critical bugs fixed in a single session:
+
+1. **API key injection** — Supervisor wasn't forwarding `ANTHROPIC_API_KEY` into Lab containers
+2. **Branch propagation** — Lab commits stranded in clone; Supervisor needed explicit `git fetch`
+3. **Port allocation** — Multiple Labs on same port; fixed with deterministic `18400 + gen-num`
+4. **Timeout accounting** — Timer started at spawn, not container-ready; boot overhead ate work time
+5. **Status detection** — Single poll without retry; Supervisor concluded failure on first miss
+
+**Stable run (gen-13 through gen-17).** Five for five. Zero failures. Zero timeouts. Average duration: 36 seconds.
+
+| Generation | Outcome | Duration | Task |
+|-----------|---------|----------|------|
+| 13 | done | 29s | Add version comment to schemas |
+| 14 | done | 28s | Trivial edit |
+| 15 | done | 33s | Trivial edit |
+| 16 | done | 53s | Trivial edit |
+| 17 | done | 38s | Trivial edit |
+
+---
+
+## The Generation Cycle
+
+Six phases, four actors, one complete loop:
+
+1. **Task Definition.** User defines task in `program.md` with acceptance criteria and success conditions.
+2. **Lab Spawn.** Prime sends `POST /spawn` to Supervisor. Supervisor clones repo, creates `lab/gen-N` branch, writes `program.md`, copies `lab-worker.js`, validates API key, and boots the container on `loom-net`.
+3. **Lab Autonomous Execution.** Lab boots, reads `program.md`, enters agentic loop (Claude API → tool calls → repeat). Commits work when done. Supervisor polls `/status` every 5s and enforces a 10-minute hard timeout.
+4. **Completion Detection.** Supervisor detects done/failed/timeout. Cancels timeout, updates `generations.edn`, saves report, fetches branch into main repo, stops and destroys container.
+5. **Independent Verification.** Prime runs `verify_generation`: `git diff --stat`, `git diff` (truncated), checks out the Lab branch, runs `npm test`, always returns to master.
+6. **Promote or Rollback.** Tests pass → merge branch into main, tag `gen-N`, delete branch. Tests fail → delete branch, discard.
+
+The key property: **the Lab is fully autonomous.** Prime doesn't guide it. It polls and waits. When the Lab finishes, Prime pulls the branch and verifies independently.
+
+---
+
+## What Gen-1 Actually Did
+
+The first real self-modification was modest by design: add line numbers to the `read_file` tool output. The `program.md`:
+
+```
+# Task: Add line numbers to read_file tool output
+
+In src/loom/agent/tools.cljs, modify the read-file function.
+After reading file content, split into lines and prepend
+1-based line numbers.
+
+Also update test expectations in test/loom/tools_test.cljs.
+
+## IMPORTANT
+- Do NOT run npm test or npx shadow-cljs.
+- Just make the edits and let the auto-commit handle the rest.
+```
+
+The Lab read the program, opened both files, made the edits, and committed. Prime pulled the branch, ran the test suite, confirmed all 90 tests passed, and promoted. 12 lines changed. Under 40 seconds.
+
+It's not impressive as a code change. It's impressive as a *cycle*. An autonomous agent in a VM wrote code, and a second agent independently verified it before merging. No human touched any file between spawn and promote.
+
+---
+
+## Architecture Review: An Honest Assessment
+
+After reaching stability, we ran a full architecture review of the 2,214-line codebase: 19 source files, 13 test files, ~1:1 test-to-source ratio by LOC.
+
+| Dimension | Status | Gap |
+|-----------|--------|-----|
+| Core loop | Working | — |
+| Self-modification proof | Partial | Only trivial tasks; no agent code modification promoted |
+| Test coverage | Strong | No integration test with real containers |
+| Dead code | ~7% | Eval client/server compiled but never called (146 LOC) |
+| Observability | Basic | No diff visibility, no per-gen metrics |
+| Code legibility | Good | `supervisor/http.cljs` at 307 lines does too many things |
+
+Three findings matter most:
+
+**1. Verification is too shallow.** `verify_generation` runs `npm test` — that's it. No eval probes, no benchmarks, no code quality checks. A Lab could introduce a subtle regression that passes all 90 tests. Prime promotes blindly if tests are green.
+
+**2. No visibility into what changed.** The verification flow didn't include `git diff`. Prime had no idea *what* the Lab modified — only whether tests passed. Fixed during hardening, but the deeper issue remains: Prime has no semantic understanding of changes.
+
+**3. Three Malli schemas are decorative.** `Proposal`, `ProbeResult`, and `Verdict` — declared as "fixed-point contracts" — are defined but never validated. The real contract is plain JSON over HTTP, unvalidated.
+
+---
+
+## What's Working
+
+- **Clean separation of concerns.** Agent, Supervisor, Lab are genuinely independent.
+- **Minimal dependencies.** Malli + shadow-cljs. No frameworks.
+- **Git as source of truth.** Branches, tags, `generations.edn`. Full history recoverable from repo alone.
+- **Container isolation.** Labs run in Apple Containerization VMs with no shared state.
+- **Compact codebase.** 2,214 LOC for a working self-modifying agent.
+
+---
+
+## What's Missing
+
+**No generation has modified agent code.** Every successful `program.md` has been a trivial operation. Gen-1 is the only one that touched agent functionality, and that was manually orchestrated.
+
+**Prime has no agency.** It's a chatbot with tools. The user writes `program.md`, tells Prime to execute, Prime mechanically spawns/verifies/promotes. No decision-making, no prioritization, no self-assessment.
+
+**No fitness function.** Self-improvement requires measuring improvement. We track timing and outcome but not: test count, code coverage, token efficiency, tool call counts.
+
+---
+
+## Next: Closing the Recursive Loop
+
+The MVP proves the pipeline works (human writes `program.md` → Lab executes → verify → promote/rollback). The next step: **Prime autonomously proposes and executes its own next improvement.**
+
+This requires a *reflect* step after every promote or rollback:
+
+1. Analyze the generation report
+2. Read `priorities.md` for user-directed goals
+3. Review codebase state
+4. Generate the next `program.md`
+5. Spawn a new Lab and continue
+
+Prerequisites before implementing reflect:
+
+| Prerequisite | Why | Status |
+|-------------|-----|--------|
+| Enrich generation reports | Reflect needs token counts, diff stats, test results | Not implemented |
+| Define fitness function | What must improve? | Not implemented |
+| Create `priorities.md` | User-authored direction for Prime | Not implemented |
+
+Safety valves: generation cap, token budget, fitness plateau detection, human interrupt.
+
+**The compelling demo:** "I pointed it at itself and walked away. Here's what it improved." We're one milestone away.
+
+---
+
+## Known Constraints
+
+- **Labs cannot self-test** — shadow-cljs compilation takes ~25s in the VM, eating the timeout
+- **Tailscale breaks containers** — Apple Containerization vmnet routing fails with Tailscale active
+- **macOS 26 + Apple Silicon only** — no Linux, no Intel
+
+---
+
+## References
+
+- [The program.md Protocol](2026-03-13-program-md.md) — The steering mechanism for Lab runs
+- [The Prime and the Lab](2026-03-12-recursive-self-improvement.md) — Original architecture spec
+- [The Autoresearch Pattern](2026-03-11-self-improving-agents.md) — Karpathy's blueprint
+- [Apple Containerization](https://github.com/apple/container) — VM-per-container on macOS 26
+- [Malli](https://github.com/metosin/malli) — Schema library for fixed-point contracts
+- [Pi Coding Agent](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/) — Radical minimalism in agent design
+
+---
+
+*Previous: [The program.md Protocol: Steering Self-Improvement with a Contract](2026-03-13-program-md.md)*
+
+
+---
+
+
+---
 title: "The program.md Protocol: Steering Self-Improvement with a Contract"
 date: 2026-03-13
 meta: "Agent Architecture"
@@ -6,6 +191,8 @@ series: "Self-Improving Agents"
 series_part: 8
 prev: "The Prime and the Lab"
 prev_url: 2026-03-12-recursive-self-improvement.md
+next: "First Light: Loom's Self-Modification Pipeline in 2,214 Lines"
+next_url: 2026-03-16-loom-mvp.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-13-program-md.html
 ---
 
@@ -142,6 +329,10 @@ Phase 1a (self-hosted ClojureScript eval) is done — 9 tests, 17 assertions pas
 - [Apple Containerization](https://github.com/apple/container) — VM-per-container with custom network DNS.
 - [Malli](https://github.com/metosin/malli) — Schema library for the fixed-point contracts.
 - [Pi Coding Agent](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/) — Radical minimalism. Our Lab inherits this philosophy.
+
+---
+
+*Continue reading: [First Light: Loom's Self-Modification Pipeline in 2,214 Lines](2026-03-16-loom-mvp.md)*
 
 
 ---

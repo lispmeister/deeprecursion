@@ -6,6 +6,8 @@ series: "Self-Improving Agents"
 series_part: 8
 prev: "The Prime and the Lab"
 prev_url: 2026-03-12-recursive-self-improvement.md
+next: "First Light: Loom's Self-Modification Pipeline in 2,214 Lines"
+next_url: 2026-03-16-loom-mvp.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-13-program-md.html
 ---
 
@@ -142,3 +144,7 @@ Phase 1a (self-hosted ClojureScript eval) is done — 9 tests, 17 assertions pas
 - [Apple Containerization](https://github.com/apple/container) — VM-per-container with custom network DNS.
 - [Malli](https://github.com/metosin/malli) — Schema library for the fixed-point contracts.
 - [Pi Coding Agent](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/) — Radical minimalism. Our Lab inherits this philosophy.
+
+---
+
+*Continue reading: [First Light: Loom's Self-Modification Pipeline in 2,214 Lines](2026-03-16-loom-mvp.md)*
