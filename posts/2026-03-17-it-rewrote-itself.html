@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>It Rewrote Itself: Loom's First Autonomous Self-Modification &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-17-it-rewrote-itself.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  ol li {
+    margin-bottom: 0.6rem;
+    line-height: 1.65;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  .tech-table tr:hover {
+    background: var(--surface);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .ref-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .ref-list li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .ref-list li:last-child {
+    border-bottom: none;
+  }
+
+  .ref-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+  }
+
+  /* Hero moment */
+  .hero-moment {
+    background: var(--surface);
+    border: 2px solid var(--green);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-moment::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, var(--green-dim), transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-gen {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 3rem;
+    font-weight: 600;
+    color: var(--green);
+    position: relative;
+  }
+
+  .hero-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 0.5rem;
+    position: relative;
+  }
+
+  .hero-time {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-top: 1rem;
+    position: relative;
+    font-weight: 300;
+  }
+
+  /* Run timeline */
+  .run-timeline {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .run-row {
+    display: grid;
+    grid-template-columns: 80px 100px 60px 60px 1fr;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+
+  .run-row:last-child {
+    border-bottom: none;
+  }
+
+  .run-row-header {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  .run-model {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: #eeeef4;
+  }
+
+  .run-promoted-zero {
+    color: var(--text-dim);
+  }
+
+  .run-promoted-yes {
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .run-highlight {
+    background: var(--green-dim);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+  }
+
+  /* Bug cards */
+  .bug-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .bug-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .bug-card.fixed {
+    border-left-color: var(--green);
+  }
+
+  .bug-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .bug-title {
+    font-weight: 600;
+    color: #eeeef4;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .bug-desc {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+
+  .bug-fix {
+    font-size: 0.82rem;
+    color: var(--green);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Model comparison */
+  .model-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+  }
+
+  .model-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #eeeef4;
+    margin-bottom: 0.25rem;
+  }
+
+  .model-cost {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+
+  .model-verdict {
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+
+  .model-verdict-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+
+  .verdict-fail {
+    background: rgba(224, 90, 111, 0.15);
+    color: var(--red);
+  }
+
+  .verdict-pass {
+    background: var(--green-dim);
+    color: var(--green);
+  }
+
+  /* Diff display */
+  .diff-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+  }
+
+  .diff-display .diff-header {
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .diff-add {
+    color: var(--green);
+  }
+
+  .diff-del {
+    color: var(--red);
+  }
+
+  .diff-file {
+    color: var(--cyan);
+    font-weight: 500;
+  }
+
+  /* Comparison table */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .compare-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .compare-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+
+  @media (max-width: 600px) {
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .run-row {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem;
+    }
+    .run-row-header:nth-child(n+4) {
+      display: none;
+    }
+    .compare-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Cost calculator */
+  .cost-calculator {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .calc-controls {
+    margin-bottom: 1.25rem;
+  }
+
+  .calc-control {
+    margin-bottom: 1rem;
+  }
+
+  .calc-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .calc-value {
+    color: #eeeef4;
+    font-weight: 600;
+  }
+
+  .calc-model-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .calc-model-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .calc-model-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .calc-model-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .calc-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .calc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .calc-results {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
+
+  .calc-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+  }
+
+  .calc-result-label {
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  .calc-result-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  @media (prefers-color-scheme: light) {
+    strong {
+      color: #2a2a32;
+    }
+    .bug-title, .model-name, .run-model, .hero-gen {
+      color: #1a1a20;
+    }
+    .stat-value {
+      color: #1a1a20;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>It Rewrote Itself</h1>
+  <p class="meta">Agent Architecture &middot; March 17, 2026</p>
+
+  <div class="see-also">
+    Part 10 of a series. Previous: <a href="2026-03-16-loom-mvp.html">First Light</a>. See also: <a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a>, <a href="2026-03-13-program-md.html">The program.md Protocol</a>.
+  </div>
+
+  <div class="abstract">Yesterday we had a pipeline. Today it did something with it. At 19:24 UTC on March 17, 2026, a ClojureScript agent running inside an Apple Containerization VM opened its own source code, decided two private functions should be public, wrote 63 lines of tests to prove they work, and committed. A second agent &mdash; running outside the container &mdash; pulled the branch, ran 236 tests, asked an LLM to review the diff, and promoted the change to master. No human touched a file. The whole thing took 56 seconds.</div>
+
+  <div class="hero-moment">
+    <div class="hero-gen">gen-72</div>
+    <div class="hero-label">First autonomous self-modification &middot; promoted to master</div>
+    <div class="hero-time">56 seconds &middot; 236 tests &middot; 607 assertions &middot; 0 failures</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value">17</div>
+      <div class="stat-label">Autonomous gens</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Models tested</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">6</div>
+      <div class="stat-label">Bugs found &amp; fixed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">1</div>
+      <div class="stat-label">Promoted</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">The Bet</div>
+
+  <p>Five posts ago we made a specific claim: an agent that rewrites one of its own functions, tests the result in a Lab container, and promotes the improvement is worth more than the entire blog series that described it. The <a href="2026-03-16-loom-mvp.html">MVP post</a> proved the pipeline ran &mdash; containers booted, branches propagated, tests executed &mdash; but every successful generation was a trivial file operation. Add a comment. Create a text file. Count source files.</p>
+
+  <p>We hadn't proven the thing that matters: can the agent change <em>itself</em>?</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Sixteen Failures</div>
+
+  <p>We pointed the autonomous loop at the codebase and pressed go. Five runs. Three models. Sixteen generations before the first promotion.</p>
+
+  <div class="run-timeline">
+    <div class="run-row">
+      <div class="run-row-header">Run</div>
+      <div class="run-row-header">Model</div>
+      <div class="run-row-header">Gens</div>
+      <div class="run-row-header">Promoted</div>
+      <div class="run-row-header">What happened</div>
+    </div>
+    <div class="run-row">
+      <div>Run 1</div>
+      <div class="run-model">Haiku</div>
+      <div>5</div>
+      <div class="run-promoted-zero">0</div>
+      <div>Race condition: agent sees &ldquo;done&rdquo; before supervisor fetches the branch</div>
+    </div>
+    <div class="run-row">
+      <div>Run 2</div>
+      <div class="run-model">Haiku</div>
+      <div>5</div>
+      <div class="run-promoted-zero">0</div>
+      <div>Gen-58 passes all tests &mdash; LLM reviewer rejects it anyway</div>
+    </div>
+    <div class="run-row">
+      <div>Run 3</div>
+      <div class="run-model">Anthropic</div>
+      <div>3</div>
+      <div class="run-promoted-zero">0</div>
+      <div>API credits exhausted mid-run</div>
+    </div>
+    <div class="run-row">
+      <div>Run 4</div>
+      <div class="run-model">Minimax&nbsp;M2.5</div>
+      <div>3</div>
+      <div class="run-promoted-zero">0</div>
+      <div>Model reads every file in the repo. Writes nothing.</div>
+    </div>
+    <div class="run-row" style="background: var(--green-dim); border-radius: 4px;">
+      <div><strong>Run 5</strong></div>
+      <div class="run-model">Opus&nbsp;4.6</div>
+      <div><strong>1</strong></div>
+      <div class="run-promoted-yes">1</div>
+      <div><strong>56 seconds. Clean. First try.</strong></div>
+    </div>
+  </div>
+
+  <p>Every failure taught us something we couldn't have learned from unit tests.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Six Bugs That Had to Die</div>
+
+  <p>The pipeline looked correct. It passed 142 tests. It had run 17 stable generations of trivial tasks. Then we asked it to do real work autonomously, and six bugs crawled out of the walls.</p>
+
+  <div class="bug-grid">
+    <div class="bug-card fixed">
+      <div class="bug-num">Bug 1</div>
+      <div class="bug-title">The race condition</div>
+      <div class="bug-desc">The agent polls the Lab container directly &mdash; <code>GET /status</code> &mdash; and sees &ldquo;done.&rdquo; It immediately tries to verify by checking out the Lab's branch. But the supervisor hasn't finished <code>git fetch</code> from the container's repo clone yet. <code>git checkout lab/gen-47</code> fails: &ldquo;pathspec did not match any file(s) known to git.&rdquo;</div>
+      <div class="bug-fix">Fix: retry loop. Three attempts, two seconds apart.</div>
+    </div>
+
+    <div class="bug-card fixed">
+      <div class="bug-num">Bug 2</div>
+      <div class="bug-title">Local changes blocking checkout</div>
+      <div class="bug-desc">The agent has been editing <code>self_modify.cljs</code> &mdash; the same file the Lab changed. <code>git checkout lab/gen-54</code> refuses: &ldquo;Your local changes to the following files would be overwritten.&rdquo; The pipeline never considered that someone might be editing the codebase while it runs.</div>
+      <div class="bug-fix">Fix: git stash before checkout, git stash pop after.</div>
+    </div>
+
+    <div class="bug-card fixed">
+      <div class="bug-num">Bug 3</div>
+      <div class="bug-title">.gitignore duplication</div>
+      <div class="bug-desc">Every Lab spawn appends <code>lab-worker.js</code> to <code>.gitignore</code>. After 50 generations, that's 50 identical lines. Worse: the diff includes .gitignore changes in every generation, confusing the LLM reviewer.</div>
+      <div class="bug-fix">Fix: check before appending. One line of regex.</div>
+    </div>
+
+    <div class="bug-card fixed">
+      <div class="bug-num">Bug 4</div>
+      <div class="bug-title">program.md gitignored</div>
+      <div class="bug-desc">We added <code>program.md</code> to <code>.gitignore</code> so it wouldn't leak into master. But when .gitignore already had the entry and nothing else changed, <code>git commit</code> failed with &ldquo;nothing to commit&rdquo; &mdash; the Lab's task spec vanished from history.</div>
+      <div class="bug-fix">Fix: stop gitignoring program.md. It belongs in the Lab branch.</div>
+    </div>
+
+    <div class="bug-card fixed">
+      <div class="bug-num">Bug 5</div>
+      <div class="bug-title">LLM reviewer too strict</div>
+      <div class="bug-desc">Gen-58 (Haiku) passed all tests. The code change was valid &mdash; it trimmed a tool description to save tokens. The LLM reviewer rejected it because the diff included .gitignore changes and a container-relative path (<code>/workspace/</code>). Both are normal Lab artifacts, not bugs.</div>
+      <div class="bug-fix">Fix: updated review prompt to ignore Lab environment artifacts.</div>
+    </div>
+
+    <div class="bug-card fixed">
+      <div class="bug-num">Bug 6</div>
+      <div class="bug-title">Timeout handler forgot to fetch</div>
+      <div class="bug-desc">When a Lab times out, the supervisor killed the container but never ran <code>git fetch</code> on the Lab's branch. The branch existed in the container's clone but was never copied to the host. Any subsequent verify attempt failed silently.</div>
+      <div class="bug-fix">Fix: fetch on all outcomes &mdash; done, failed, and timed out.</div>
+    </div>
+  </div>
+
+  <p>None of these bugs showed up in unit tests. They required the full pipeline running against a real LLM, a real container, and real concurrent git operations. This is why you run the thing.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Model Gap</div>
+
+  <p>We tested three models as Lab workers. The results are not subtle.</p>
+
+  <div class="model-card">
+    <div class="model-name">Haiku <span class="model-verdict-tag verdict-fail">0/10 promoted</span></div>
+    <div class="model-cost">~$0.10/generation</div>
+    <div class="model-verdict">Gets close. Reads the right files, understands the task, writes code that mostly works. But &ldquo;mostly&rdquo; doesn't survive two-stage verification. Out of 10 Haiku generations, zero promoted. Useful for prototyping &mdash; cheap enough to iterate on <code>program.md</code> design &mdash; but it can't land the plane.</div>
+  </div>
+
+  <div class="model-card">
+    <div class="model-name">Minimax M2.5 <span class="model-verdict-tag verdict-fail">0/3 promoted</span></div>
+    <div class="model-cost">~$0.05/generation (coding plan)</div>
+    <div class="model-verdict">Exhibits a behavior we haven't seen documented elsewhere: it reads. And reads. And reads. It opens every file the task references. It opens files the task <em>doesn't</em> reference. It reads the same file twice. Then it reports done, having written nothing. Three generations, three empty branches. The pipeline handled it correctly &mdash; verification caught the no-op &mdash; but the model simply doesn't write code.</div>
+  </div>
+
+  <div class="model-card" style="border-color: var(--green);">
+    <div class="model-name">Opus 4.6 <span class="model-verdict-tag verdict-pass">1/1 promoted</span></div>
+    <div class="model-cost">~$1&ndash;2/generation</div>
+    <div class="model-verdict">First try. 56 seconds from spawn to done. Made the right architectural call &mdash; <code>defn-</code> to <code>defn</code> for testability, since ClojureScript doesn't support <code>#'</code> var access for private functions &mdash; wrote 18 test assertions across 6 test functions, and committed. The LLM reviewer approved with high confidence. The entire generation cost less than a cup of bad coffee.</div>
+  </div>
+
+  <p>The lesson: model capability is the binding constraint for autonomous self-modification, not infrastructure. The pipeline is the same for all three models. Only one produces promotable code.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Gen-72 Actually Changed</div>
+
+  <p>The task was deliberately chosen for safety: add unit tests for two pure helper functions that already existed in <code>self_modify.cljs</code>. No new features, no refactors, no behavioral changes. Just tests.</p>
+
+  <div class="diff-display">
+    <div class="diff-header">3 files changed, 97 insertions(+), 2 deletions(-)</div>
+    <br>
+    <span class="diff-file">src/loom/agent/self_modify.cljs</span>
+    <br>
+    <span class="diff-del">&minus;(defn- parse-test-counts</span>
+    <br>
+    <span class="diff-add">&plus;(defn parse-test-counts</span>
+    <br>
+    <span class="diff-del">&minus;(defn- parse-shortstat</span>
+    <br>
+    <span class="diff-add">&plus;(defn parse-shortstat</span>
+    <br><br>
+    <span class="diff-file">test/loom/self_modify_helpers_test.cljs</span> <span style="color: var(--green);">(new file, 63 lines)</span>
+    <br>
+    <span class="diff-add">&plus;(deftest parse-test-counts-passing ...)</span>
+    <br>
+    <span class="diff-add">&plus;(deftest parse-test-counts-failing ...)</span>
+    <br>
+    <span class="diff-add">&plus;(deftest parse-test-counts-no-match ...)</span>
+    <br>
+    <span class="diff-add">&plus;(deftest parse-shortstat-normal ...)</span>
+    <br>
+    <span class="diff-add">&plus;(deftest parse-shortstat-insertions-only ...)</span>
+    <br>
+    <span class="diff-add">&plus;(deftest parse-shortstat-empty ...)</span>
+  </div>
+
+  <p>The Lab made two changes to existing code (<code>defn-</code> &rarr; <code>defn</code> on two functions) and created a new test file. Both functions are pure &mdash; no side effects, no mocking, no async. The ideal first target for autonomous modification: low risk, high verifiability, measurable improvement.</p>
+
+  <p>It's not impressive as a code change. It <em>is</em> impressive as a proof. The agent read its own source, understood the function signatures, understood why the functions were private and why that matters in ClojureScript, made the right call to change visibility, and wrote tests that exercise edge cases &mdash; passing output, failing output, garbage input, missing fields. An agent reasoned about its own code and improved it.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Two-Stage Verification</div>
+
+  <p>Gen-72 had to pass two independent checks before promotion.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0 0 0.75rem 0;"><strong>Stage 1: Tests.</strong> Prime checks out <code>lab/gen-72</code>, runs <code>npm test</code>, confirms all 236 tests pass with 607 assertions and zero failures. This catches regressions &mdash; the Lab's changes didn't break anything that already worked.</p>
+    <p style="margin: 0;"><strong>Stage 2: LLM Review.</strong> Prime sends the full diff to an LLM: Does this change do what program.md asked? Does it introduce bugs, vulnerabilities, or regressions? The reviewer returns APPROVED or REJECTED with confidence and reasoning. Gen-72: <strong style="color: var(--green);">APPROVED</strong>, high confidence.</p>
+  </div>
+
+  <p>This two-stage approach caught something interesting during earlier runs. Haiku gen-58 <em>passed all tests</em> &mdash; zero failures, zero errors. The code change was valid. But the LLM reviewer rejected it because the diff was cluttered with .gitignore artifacts. That was a false negative &mdash; the reviewer was too strict &mdash; but it demonstrated the value of the second stage. Tests measure correctness. The LLM measures intent.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Numbers</div>
+
+  <div class="compare-row">
+    <div class="compare-col">
+      <div class="compare-label">MVP (March 16)</div>
+      <table class="tech-table" style="margin: 0;">
+        <tbody>
+          <tr><td>Source files</td><td>19 (2,214 LOC)</td></tr>
+          <tr><td>Tests</td><td>90</td></tr>
+          <tr><td>Generations</td><td>17</td></tr>
+          <tr><td>Autonomous promotions</td><td style="color: var(--text-dim);">0</td></tr>
+          <tr><td>Models tested</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="compare-col" style="border-color: var(--green);">
+      <div class="compare-label">Today (March 17)</div>
+      <table class="tech-table" style="margin: 0;">
+        <tbody>
+          <tr><td>Source files</td><td>26 (13,503 LOC)</td></tr>
+          <tr><td>Tests / Assertions</td><td>236 / 607</td></tr>
+          <tr><td>Generations</td><td>72</td></tr>
+          <tr><td>Autonomous promotions</td><td style="color: var(--green); font-weight: 600;">1</td></tr>
+          <tr><td>Models tested</td><td>3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p>The codebase grew 6x since the MVP &mdash; mostly test infrastructure, the autonomous loop driver, the reflect step, fitness scoring, and multi-provider support. Every new component was tested before deployment, and then tested again by the autonomous loop breaking it in ways we didn't anticipate.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Multi-Provider Support</div>
+
+  <p>One discovery from the autonomous runs: you want different models for different roles.</p>
+
+  <ul>
+    <li><strong>Prime</strong> (reflect, verify, review) runs Sonnet. It needs to be smart but not expensive &mdash; it's making judgments, not writing code.</li>
+    <li><strong>Lab</strong> (autonomous code generation) runs Opus. It needs to be precise. A $1 generation that promotes is cheaper than ten $0.10 generations that don't.</li>
+  </ul>
+
+  <p>Loom now supports split-provider configuration. Lab inherits from Prime unless overridden, so you can experiment with different Lab models without touching the orchestration layer:</p>
+
+  <pre><code># Prime uses Anthropic Sonnet
+ANTHROPIC_API_KEY=sk-ant-...
+LOOM_MODEL=claude-sonnet-4-20250514
+
+# Lab uses Opus
+LOOM_LAB_MODEL=claude-opus-4-6
+
+# Or use a completely different provider for Labs
+# LOOM_LAB_API_KEY=sk-cp-...
+# LOOM_LAB_API_BASE=https://api.minimax.io/anthropic
+# LOOM_LAB_MODEL=MiniMax-M2.5</code></pre>
+
+  <hr class="divider">
+
+  <div class="section-header">What's Next</div>
+
+  <p>The bottleneck has shifted. It's no longer infrastructure &mdash; that's battle-tested. It's no longer &ldquo;does it work&rdquo; &mdash; it does. The questions now are:</p>
+
+  <p><strong>Task selection.</strong> Gen-72 was safe: pure functions, no side effects, low blast radius. What's the next rung? More test coverage is safe and measurable. Small refactors are riskier but more valuable. New features are the end goal but require precise specs.</p>
+
+  <p><strong>Cost efficiency.</strong> Opus works but isn't cheap. Can we improve <code>program.md</code> quality enough for cheaper models to succeed on simple tasks? The model gap is the main cost lever.</p>
+
+  <p><strong>Fitness gaming.</strong> The current fitness function rewards test count. An autonomous agent optimizing this could write <code>(is (= 1 1))</code> a thousand times and claim improvement. The LLM reviewer is a partial defense, but we haven't tested adversarial scenarios yet.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0;"><strong>The compelling demo:</strong> &ldquo;I pointed it at itself and walked away. When I came back, it had improved.&rdquo; Gen-72 is one step short of this. The loop ran once. We need it to run five times, each building on the last, with the reflect step choosing each task. That's the demo.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">Cost Calculator</div>
+
+  <p>What does an autonomous run actually cost? Drag the sliders to estimate.</p>
+
+  <div class="cost-calculator" id="costCalc">
+    <div class="calc-controls">
+      <div class="calc-control">
+        <label class="calc-label">Lab model</label>
+        <div class="calc-model-buttons" id="calcModelBtns">
+          <button class="calc-model-btn" data-model="haiku">Haiku</button>
+          <button class="calc-model-btn" data-model="sonnet">Sonnet</button>
+          <button class="calc-model-btn active" data-model="opus">Opus 4.6</button>
+        </div>
+      </div>
+      <div class="calc-control">
+        <label class="calc-label">Generations <span class="calc-value" id="calcGensVal">5</span></label>
+        <input type="range" class="calc-slider" id="calcGens" min="1" max="20" value="5">
+      </div>
+      <div class="calc-control">
+        <label class="calc-label">Tokens per generation <span class="calc-value" id="calcToksVal">200k</span></label>
+        <input type="range" class="calc-slider" id="calcToks" min="50" max="500" value="200" step="10">
+      </div>
+    </div>
+    <div class="calc-results">
+      <div class="calc-result-row">
+        <span class="calc-result-label">Lab cost per generation</span>
+        <span class="calc-result-value" id="calcLabGen">$1.50</span>
+      </div>
+      <div class="calc-result-row">
+        <span class="calc-result-label">Prime overhead per gen (Sonnet)</span>
+        <span class="calc-result-value" id="calcPrimeGen">$0.50</span>
+      </div>
+      <div class="calc-result-row" style="border-top: 2px solid var(--border); padding-top: 0.75rem; margin-top: 0.25rem;">
+        <span class="calc-result-label" style="font-weight: 600; color: #eeeef4;">Total run cost</span>
+        <span class="calc-result-value" id="calcTotal" style="font-size: 1.3rem; color: var(--green);">$10.00</span>
+      </div>
+      <div class="calc-result-row">
+        <span class="calc-result-label" style="font-size: 0.78rem; color: var(--text-dim);">Based on observed success rates</span>
+        <span class="calc-result-value" id="calcCostPerPromotion" style="font-size: 0.82rem; color: var(--text-dim);">~$2.00/promotion</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">The Lesson</div>
+
+  <p>Building a self-modifying agent is not one problem. It's a sequence of failures that each reveal a different assumption.</p>
+
+  <p>We assumed branch fetching was synchronous. It isn't. We assumed <code>.gitignore</code> management was idempotent. It wasn't. We assumed an LLM reviewer would focus on code quality. It fixated on formatting artifacts. We assumed any model could write code. One of them just reads.</p>
+
+  <p>Each of these assumptions was invisible in the spec, invisible in unit tests, and immediately obvious in production. The 16 failed generations before gen-72 weren't wasted work. They were the work. The pipeline that promoted gen-72 is fundamentally different from the pipeline that attempted gen-43 &mdash; six bugs fewer, three models tested, and a two-stage verification system tuned by real false negatives.</p>
+
+  <p>Self-modification isn't a feature you ship. It's a capability you earn by running the loop until the loop survives.</p>
+
+  <p style="margin-top: 2rem; font-size: 1.1rem; color: #eeeef4;">Gen-72 was 56 seconds. Getting there took five days.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">References</div>
+
+  <ul class="ref-list">
+    <li><a href="2026-03-16-loom-mvp.html">First Light: Loom's Self-Modification Pipeline in 2,214 Lines</a> &mdash; The MVP field report: 17 generations, 5 critical bugs, stable pipeline. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-13-program-md.html">The program.md Protocol</a> &mdash; The steering mechanism: tasks, acceptance criteria, success conditions. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a> &mdash; Original architecture spec for the three-component system. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-11-self-improving-agents.html">The Autoresearch Pattern</a> &mdash; Karpathy's autoresearch as blueprint. Three separations, keep/revert, fixed points. <span class="ref-tag">series</span></li>
+    <li><a href="https://github.com/apple/container">Apple Containerization</a> &mdash; VM-per-container isolation on macOS 26. <span class="ref-tag">containers</span></li>
+    <li><a href="https://mariozechner.at/posts/2025-11-30-pi-coding-agent/">Pi Coding Agent</a> (Mario Zechner) &mdash; Radical minimalism: 4 tools, &lt;1000 token prompt. <span class="ref-tag">agent design</span></li>
+  </ul>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  var models = {
+    haiku:  { input: 0.80, output: 4.00, success: 0, label: 'Haiku' },
+    sonnet: { input: 3.00, output: 15.00, success: 0.3, label: 'Sonnet' },
+    opus:   { input: 15.00, output: 75.00, success: 1.0, label: 'Opus 4.6' }
+  };
+
+  var primeInput = 3.00, primeOutput = 15.00; // Sonnet for Prime
+  var primeTokensPerGen = 15000; // reflect + review overhead
+
+  var selectedModel = 'opus';
+  var gensSlider = document.getElementById('calcGens');
+  var toksSlider = document.getElementById('calcToks');
+  var gensVal = document.getElementById('calcGensVal');
+  var toksVal = document.getElementById('calcToksVal');
+  var labGenEl = document.getElementById('calcLabGen');
+  var primeGenEl = document.getElementById('calcPrimeGen');
+  var totalEl = document.getElementById('calcTotal');
+  var costPerEl = document.getElementById('calcCostPerPromotion');
+  var btns = document.querySelectorAll('.calc-model-btn');
+
+  function update() {
+    var m = models[selectedModel];
+    var gens = parseInt(gensSlider.value);
+    var toksK = parseInt(toksSlider.value);
+    var tokens = toksK * 1000;
+
+    gensVal.textContent = gens;
+    toksVal.textContent = toksK + 'k';
+
+    var labIn = tokens * 0.7;
+    var labOut = tokens * 0.3;
+    var labCost = (labIn * m.input + labOut * m.output) / 1000000;
+
+    var primeCost = (primeTokensPerGen * 0.7 * primeInput + primeTokensPerGen * 0.3 * primeOutput) / 1000000;
+
+    var perGen = labCost + primeCost;
+    var total = perGen * gens;
+
+    labGenEl.textContent = '$' + labCost.toFixed(2);
+    primeGenEl.textContent = '$' + primeCost.toFixed(2);
+    totalEl.textContent = '$' + total.toFixed(2);
+
+    if (m.success > 0) {
+      var expectedPromotions = gens * m.success;
+      var costPer = total / expectedPromotions;
+      costPerEl.textContent = '~$' + costPer.toFixed(2) + '/promotion (' + m.label + ' ' + Math.round(m.success * 100) + '% rate)';
+    } else {
+      costPerEl.textContent = '0% observed success rate \u2014 no promotions expected';
+    }
+  }
+
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      btns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      selectedModel = btn.dataset.model;
+      update();
+    });
+  });
+
+  gensSlider.addEventListener('input', update);
+  toksSlider.addEventListener('input', update);
+
+  update();
+})();
+</script>
+
+</body>
+</html>
