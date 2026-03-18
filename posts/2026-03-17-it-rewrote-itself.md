@@ -7,6 +7,8 @@ series_part: 10
 prev: "First Light: Loom's Self-Modification Pipeline in 2,214 Lines"
 prev_url: 2026-03-16-loom-mvp.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-17-it-rewrote-itself.html
+next: "CAMBRIAN: What If the Spec Is the Organism?"
+next_url: 2026-03-18-eschaton.md
 ---
 
 # It Rewrote Itself: Loom's First Autonomous Self-Modification
@@ -244,3 +246,5 @@ Gen-72 was 56 seconds. Getting there took five days.
 ---
 
 *Previous: [First Light: Loom's Self-Modification Pipeline in 2,214 Lines](2026-03-16-loom-mvp.md)*
+
+*Next: [CAMBRIAN: What If the Spec Is the Organism?](2026-03-18-eschaton.md)*

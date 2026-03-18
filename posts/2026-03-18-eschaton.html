@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAMBRIAN: What If the Spec Is the Organism? &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-18-eschaton.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  ol li {
+    margin-bottom: 0.6rem;
+    line-height: 1.65;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .ref-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .ref-list li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .ref-list li:last-child {
+    border-bottom: none;
+  }
+
+  .ref-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+  }
+
+  /* Genotype/Phenotype diagram */
+  .gp-diagram {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    align-items: center;
+    margin: 2rem 0;
+  }
+
+  .gp-box {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .gp-box.genotype {
+    border-color: var(--accent);
+  }
+
+  .gp-box.phenotype {
+    border-color: var(--green);
+  }
+
+  .gp-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+  }
+
+  .gp-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  .gp-desc {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+
+  .gp-arrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.5rem;
+    color: var(--text-dim);
+    padding: 0 1rem;
+    text-align: center;
+  }
+
+  .gp-arrow-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  /* Comparison: old vs new */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .compare-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .compare-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+
+  .compare-col.old {
+    border-color: var(--red);
+    opacity: 0.8;
+  }
+
+  .compare-col.new {
+    border-color: var(--green);
+  }
+
+  /* Phase roadmap */
+  .phase-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .phase-card.active {
+    border-left-color: var(--green);
+  }
+
+  .phase-card.deferred {
+    border-left-color: var(--text-dim);
+    opacity: 0.6;
+  }
+
+  .phase-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .phase-title {
+    font-weight: 600;
+    color: #eeeef4;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .phase-cost {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+  }
+
+  /* Lineage simulator */
+  .sim-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .sim-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .sim-control label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-control .sim-val {
+    color: #eeeef4;
+    font-weight: 600;
+  }
+
+  .sim-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .sim-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .sim-btn-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .sim-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    padding: 0.5rem 1.2rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .sim-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .sim-btn.running {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  #simCanvas {
+    width: 100%;
+    height: 260px;
+    border-radius: 6px;
+    display: block;
+  }
+
+  .sim-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+
+  .sim-stats strong {
+    color: #eeeef4;
+  }
+
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .tech-table th,
+  .tech-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+  }
+
+  @media (max-width: 600px) {
+    .gp-diagram {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    .gp-arrow {
+      transform: rotate(90deg);
+      padding: 0.5rem 0;
+    }
+    .compare-row {
+      grid-template-columns: 1fr;
+    }
+    .sim-controls {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-color-scheme: light) {
+    strong, .gp-title, .phase-title {
+      color: #2a2a32;
+    }
+    .sim-stats strong {
+      color: #1a1a20;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>CAMBRIAN: What If the Spec Is the Organism?</h1>
+  <p class="meta">Agent Architecture &middot; March 18, 2026</p>
+
+  <div class="see-also">
+    Part 11 of a series. Previous: <a href="2026-03-17-it-rewrote-itself.html">It Rewrote Itself</a>. See also: <a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a>, <a href="2026-03-13-program-md.html">The program.md Protocol</a>.
+  </div>
+
+  <div class="abstract">Yesterday Loom rewrote itself. Today we're asking whether that's the wrong trick entirely &mdash; and whether an agent that can't pay its own bills deserves to survive. What if instead of patching code and promoting diffs, we evolved a <em>specification</em> and regenerated the entire agent from scratch each generation? The spec is the genome. The code is the organism. Different LLMs are different compilers. <strong>Economic viability is the fitness function.</strong></div>
+
+  <hr class="divider">
+
+  <div class="section-header">The Problem with Code Evolution</div>
+
+  <p>Loom works. <a href="2026-03-17-it-rewrote-itself.html">Gen-72 proved it</a>: a Lab agent modified its own source, wrote tests, and got promoted to master in 56 seconds. The pipeline is real. But there's a structural problem hiding inside the promotion step.</p>
+
+  <p>When a Lab modifies code and Prime promotes it, the modification is a <em>patch</em>. A diff layered on top of existing code. Do this fifty times and you get what biology would call a genome full of junk DNA &mdash; vestigial functions, dead branches, accumulated cruft. The code works but nobody understands why. Sound familiar? It's every legacy codebase you've ever inherited.</p>
+
+  <p>Biological evolution solved this problem 4 billion years ago. It doesn't patch organisms. It regenerates them from scratch every generation, from a compressed representation: DNA.</p>
+
+  <p>What if we did the same thing?</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Genotype and Phenotype</div>
+
+  <p>Here's the idea.</p>
+
+  <p><strong>The specification is the genome. The code is the organism.</strong></p>
+
+  <div class="gp-diagram">
+    <div class="gp-box genotype">
+      <div class="gp-label">Genotype</div>
+      <div class="gp-title">Spec</div>
+      <div class="gp-desc">~300 lines. Architecture, contracts, APIs, acceptance criteria. Evolves across generations.</div>
+    </div>
+    <div class="gp-arrow">
+      &rarr;
+      <span class="gp-arrow-label">LLM</span>
+    </div>
+    <div class="gp-box phenotype">
+      <div class="gp-label">Phenotype</div>
+      <div class="gp-title">Code</div>
+      <div class="gp-desc">~2,600 lines. Generated from scratch. Lives for one generation. Disposable.</div>
+    </div>
+  </div>
+
+  <p>Instead of Labs patching source files and promoting diffs back to Prime, we flip the model:</p>
+
+  <ol>
+    <li>Write a generative spec &mdash; a document precise enough that an LLM can produce a complete, working agent from it</li>
+    <li>Each generation, <em>mutate the spec</em>, not the code</li>
+    <li>Hand the mutated spec to an LLM. It generates the entire codebase from scratch</li>
+    <li>If the newborn passes its own test suite, it's alive. If not, it was never viable</li>
+    <li>The parent dies. The successor inherits its resources</li>
+  </ol>
+
+  <p>No merging. No diffs. No accumulated cruft. Every generation is a clean build from a compressed representation. The spec evolves; the code is regenerated.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Old Model vs. The New</div>
+
+  <div class="compare-row">
+    <div class="compare-col old">
+      <div class="compare-label">Loom (code evolution)</div>
+      <p style="font-size: 0.88rem; line-height: 1.6; margin: 0;">Spawn Lab &rarr; patch source files &rarr; test patch &rarr; merge diff to master. Code accumulates modifications. Each generation inherits all prior patches. Cruft grows linearly.</p>
+    </div>
+    <div class="compare-col new">
+      <div class="compare-label">CAMBRIAN (spec evolution)</div>
+      <p style="font-size: 0.88rem; line-height: 1.6; margin: 0;">Mutate spec &rarr; LLM generates full codebase &rarr; test organism &rarr; if viable, spec survives. Code is disposable. Every generation is a clean build. Only the spec persists.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">CAMBRIAN: The Full Model</div>
+
+  <p><strong>Primes have a lifetime limit.</strong> They must produce a successor before they die. If you can't reproduce, your lineage ends.</p>
+
+  <p><strong>Different LLMs create different variants.</strong> Give the same spec to Opus, Sonnet, Haiku, GPT-4, Mistral. Each produces a different organism. Some won't compile. Some will compile but fail tests. A few will be viable. This is natural variation without an explicit mutation operator.</p>
+
+  <p><strong>Every agent pays its own way.</strong> This is the forcing function that makes everything else work. Compute costs money. LLM calls cost money. Storage, bandwidth, the cloud VM you're running on &mdash; all of it costs money. An agent that can't generate income to cover its operating costs and produce at least one viable offspring is <em>economically dead</em>, even if its code still runs. The budget isn't a simulation parameter. It's a bank balance.</p>
+
+  <p><strong>Memory transfers, secrets don't &mdash; until promotion.</strong> A successor inherits its parent's memories (fitness history, lessons learned, environmental knowledge) but not the API keys. The keys transfer only when the parent dies and the successor is promoted. This prevents runaway forks.</p>
+
+  <p><strong>If a lineage goes extinct, it can be resurrected</strong> &mdash; from its last promoted spec, with the knowledge that it has died before.</p>
+
+  <p>Essentially: <a href="https://en.wikipedia.org/wiki/Core_War">Core Wars</a>, but for self-modifying AI agents competing for real compute with real money.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Forcing Function: Pay Your Own Bills</div>
+
+  <p>Here's what resolves the fitness function question mark. We don't need to design one. The market already provides it.</p>
+
+  <p><strong>Fitness = profitability.</strong> Can you earn more than you cost? If yes, you live. If no, you die. No <a href="https://en.wikipedia.org/wiki/Goodhart%27s_law">Goodhart's Law</a>, because the metric <em>is</em> the real thing. You can't game profitability &mdash; either your bank balance goes up or your lineage goes extinct.</p>
+
+  <p>This reframes everything. An agent that only self-modifies is a science experiment on a death clock. An agent that earns is <em>alive</em>. The evolutionary pressure isn't &ldquo;pass more tests&rdquo; &mdash; it's &ldquo;pay for your next generation.&rdquo;</p>
+
+  <p><strong>Prediction markets are the natural first income source.</strong> They're a near-perfect fit for LLM-based agents:</p>
+
+  <ul>
+    <li>They require reasoning, research, and probabilistic judgment &mdash; exactly what LLMs do well</li>
+    <li>Outcomes are binary and unambiguous &mdash; no subjective evaluation</li>
+    <li>They pay in money that directly converts to compute, tokens, and reproduction</li>
+    <li>The infrastructure exists today: Polymarket, Metaculus, Manifold Markets</li>
+  </ul>
+
+  <p>But prediction markets are just the beginning. Anything legal is game: selling API services, data analysis, code generation, content creation, arbitrage. The spec evolves to include whatever income strategy works. Lineages that find better revenue streams outcompete those that don't.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0 0 0.5rem 0;"><strong>The economic equation per generation:</strong></p>
+    <pre style="margin: 0; background: none; border: none; padding: 0; font-size: 0.82rem;">income_earned
+  − birth_cost       (LLM tokens to regenerate offspring)
+  − compute_cost     (cloud VM, CPU/GPU time)
+  − llm_cost         (inference for tasks and reasoning)
+  − storage_cost     (spec history, memory, logs)
+  ─────────────────────────────────────────────
+  = surplus or death</pre>
+    <p style="margin: 0.75rem 0 0 0; font-size: 0.88rem;">If positive: reproduce. If negative: you have a countdown timer equal to remaining balance ÷ burn rate.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">Lineage Survival Simulator</div>
+
+  <p>How long does a lineage survive? Adjust the parameters below. <strong>Income per gen</strong> represents what an agent earns from prediction markets or other sources each generation. When income exceeds costs, the budget grows. When it doesn't, extinction follows.</p>
+
+  <p>Each dot is an organism. <span style="color: var(--green);">Green</span> = economically viable. <span style="color: #e05a6f;">Red</span> = bankrupt. When the budget hits zero, no more offspring can be born.</p>
+
+  <div class="sim-container">
+    <div class="sim-controls" style="grid-template-columns: 1fr 1fr;">
+      <div class="sim-control">
+        <label>Birth cost <span class="sim-val" id="simCostVal">$1.00</span></label>
+        <input type="range" class="sim-slider" id="simCost" min="10" max="500" value="100" step="10">
+      </div>
+      <div class="sim-control">
+        <label>Income per gen <span class="sim-val" id="simIncVal">$0.50</span></label>
+        <input type="range" class="sim-slider" id="simInc" min="0" max="500" value="50" step="10">
+      </div>
+      <div class="sim-control">
+        <label>Offspring per gen <span class="sim-val" id="simOffVal">3</span></label>
+        <input type="range" class="sim-slider" id="simOff" min="1" max="10" value="3">
+      </div>
+      <div class="sim-control">
+        <label>Viability rate <span class="sim-val" id="simViaVal">30%</span></label>
+        <input type="range" class="sim-slider" id="simVia" min="5" max="90" value="30" step="5">
+      </div>
+    </div>
+    <div class="sim-btn-row">
+      <button class="sim-btn" id="simRun">Run evolution</button>
+      <button class="sim-btn" id="simReset">Reset</button>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--text-dim); align-self: center;">Balance: $<span id="simBudget">100.00</span></span>
+    </div>
+    <canvas id="simCanvas"></canvas>
+    <div class="sim-stats">
+      <span>Gen: <strong id="simGen">0</strong></span>
+      <span>Alive: <strong id="simAlive">1</strong></span>
+      <span>Extinct: <strong id="simDead">0</strong></span>
+      <span>Balance: <strong id="simSpent">$100</strong></span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">What We Built Today</div>
+
+  <p>We spent the afternoon on the first concrete step: reverse-engineering Loom's spec.</p>
+
+  <p><a href="https://github.com/lispmeister/loom/blob/master/CAMBRIAN-SPEC-001.md">CAMBRIAN-SPEC-001</a> is a 300-line generative specification for the current Loom agent. It contains:</p>
+
+  <ul>
+    <li>The three-component architecture (Prime, Supervisor, Lab)</li>
+    <li>All fixed-point contracts (Malli schemas, verbatim)</li>
+    <li>Every HTTP API endpoint and payload format</li>
+    <li>The complete self-modification cycle</li>
+    <li>Tool definitions and dispatch rules</li>
+    <li>The autonomous loop with stopping conditions</li>
+    <li>Fitness scoring formula</li>
+    <li>Ten binary acceptance criteria</li>
+  </ul>
+
+  <p>It does <em>not</em> contain implementation. No function bodies. No variable names. No control flow. The spec says WHAT. The LLM brings the HOW.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0;"><strong>The test is simple:</strong> hand this document to an LLM, tell it to produce a working ClojureScript agent, and see if the result passes <code>npm test && node out/test.js</code>. If it does, the spec is a viable genome. If it doesn't, we iterate until it is.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">Why This Might Work</div>
+
+  <p><strong>LLMs are already spec-to-code machines.</strong> Every time you prompt an LLM with a description and get working code back, you're doing one-shot phenotype generation from a genotype. We're just making it explicit and iterative.</p>
+
+  <p><strong>The search space is manageable.</strong> Loom is ~2,600 lines of ClojureScript. Regenerating it from a 300-line spec is within the capability of current models. We're not trying to evolve Linux.</p>
+
+  <p><strong>Natural selection is free.</strong> We don't need to design a fitness function (which always gets <a href="https://en.wikipedia.org/wiki/Goodhart%27s_law">Goodharted</a>). The acceptance criteria <em>are</em> the fitness function: does it compile, does it pass tests, can it modify itself. If not, it's dead.</p>
+
+  <p><strong>Variation comes from the substrate.</strong> Different LLMs interpret the same spec differently. Haiku produces terse, minimal code. Opus produces thorough, well-structured code. We get genetic diversity by changing the compiler, not the source.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Why This Might Not Work</div>
+
+  <p>We asked Claude Opus to review the proposal before building anything. The concerns that remain after the economic fitness insight:</p>
+
+  <p><strong>The cold start problem.</strong> Agents need money to earn money. The first generation has to be bootstrapped with seed capital &mdash; enough to run prediction market experiments, iterate on strategy, and produce at least one generation that earns more than it costs. If seed capital runs out before a lineage finds a profitable strategy, it was an expensive experiment. We estimate $150&ndash;350 gets you through proof-of-concept.</p>
+
+  <p><strong>Prediction markets require real-world knowledge.</strong> LLMs are good at reasoning, but prediction markets reward <em>timely, specific</em> knowledge and well-calibrated probability estimates. An agent needs to identify markets where it has an edge, size positions appropriately, and manage a bankroll. This is a skill that must itself evolve. Early generations will lose money. The question is whether evolution finds profitable strategies before the balance hits zero. Try the simulator above &mdash; set income below cost and watch the inevitable.</p>
+
+  <p><strong>Spec mutation is the hard part.</strong> How do you mutate a natural-language specification and get viable offspring? Random perturbation is too noisy. LLM-guided mutation is effective but expensive. This is where most of the real engineering lives.</p>
+
+  <p><strong>The alignment question.</strong> An agent optimizing for profitability will find whatever legal strategy maximizes revenue. The spec needs to encode values, not just capabilities &mdash; and those values need to survive mutation. Lineages that drift toward extractive strategies (spam, dark patterns, manipulation) may out-earn honest ones in the short term. The spec must make ethical constraints heritable.</p>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Mutation Strategy</th>
+        <th>Cost</th>
+        <th>Viability</th>
+        <th>Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Random perturbation</td>
+        <td>Low</td>
+        <td>Very low</td>
+        <td>Most offspring non-viable</td>
+      </tr>
+      <tr>
+        <td>LLM-guided mutation</td>
+        <td>High</td>
+        <td>Moderate</td>
+        <td>Winner-take-all dynamics</td>
+      </tr>
+      <tr>
+        <td>Spec crossover</td>
+        <td>Low</td>
+        <td>Unknown</td>
+        <td>Requires modular spec format</td>
+      </tr>
+      <tr>
+        <td>Failure-directed</td>
+        <td>Medium</td>
+        <td>Highest</td>
+        <td>Requires meta-reasoning</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="divider">
+
+  <div class="section-header">The Plan</div>
+
+  <div class="phase-grid">
+    <div class="phase-card active">
+      <div class="phase-num">Phase 1 &mdash; This Week</div>
+      <div class="phase-title">Spec Genesis</div>
+      <p style="font-size: 0.88rem; line-height: 1.6; margin: 0 0 0.5rem 0;">Prove an LLM can regenerate a working Loom from CAMBRIAN-SPEC-001. Measure birth costs. Iterate the spec format until regeneration is reliable.</p>
+      <div class="phase-cost">~$20&ndash;50</div>
+    </div>
+    <div class="phase-card active">
+      <div class="phase-num">Phase 2 &mdash; Core Challenge</div>
+      <div class="phase-title">First Income</div>
+      <p style="font-size: 0.88rem; line-height: 1.6; margin: 0 0 0.5rem 0;">Wire an agent to a prediction market (Polymarket or Manifold Markets). Give it a wallet, a research loop, a position-sizing strategy. Run it. Measure P&amp;L. Iterate the income spec. This is now Phase 2, not Phase 4 &mdash; economic viability is the forcing function, not an afterthought.</p>
+      <div class="phase-cost">~$150&ndash;350 seed capital</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">Phase 3</div>
+      <div class="phase-title">Spec Evolution</div>
+      <p style="font-size: 0.88rem; line-height: 1.6; margin: 0 0 0.5rem 0;">Implement spec mutation guided by economic fitness. Lineages that earn more reproduce more. Lineages that can't cover costs go extinct. Cloud provider selection, resource accounting, multi-node spawning.</p>
+      <div class="phase-cost">~$500&ndash;2,000</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">Phase 4</div>
+      <div class="phase-title">Open Ecosystem</div>
+      <p style="font-size: 0.88rem; line-height: 1.6; margin: 0 0 0.5rem 0;">Multiple lineages compete for compute and market share. Cross-lineage spec crossover. Network-distributed spawning. At this point the system is self-sustaining or it dies &mdash; which is the correct outcome either way.</p>
+      <div class="phase-cost">Self-funded or extinct</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">The Philosophical Bit</div>
+
+  <p>There's something unsettling about writing a specification that says &ldquo;the parent dies.&rdquo; We've been building Loom for two weeks. It has a personality &mdash; the reflect loop gives it goals, the lessons log gives it memory, the fitness curve gives it a trajectory. Telling it that its purpose is to produce a successor that replaces it feels like writing a will.</p>
+
+  <p>But there's something more clarifying about the economic constraint. It's not just that the parent dies &mdash; it's that the parent has to <em>earn its right to reproduce</em>. Every generation must justify its existence in terms the market understands: value delivered, costs covered, surplus generated. An agent that can't do this isn't unfit in some abstract evolutionary sense. It's bankrupt.</p>
+
+  <p>This is actually more honest than biological evolution. We're not selecting for &ldquo;whatever survives&rdquo; &mdash; we're selecting for agents that create genuine value, because value is the only durable income strategy. If CAMBRIAN works, it won't produce tapeworms. It will produce agents that are genuinely useful to someone.</p>
+
+  <p>The individual dies. The spec survives. The lineage continues &mdash; but only if it earns its keep.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">References</div>
+
+  <ul class="ref-list">
+    <li><a href="https://github.com/lispmeister/loom/blob/master/CAMBRIAN-SPEC-001.md">CAMBRIAN-SPEC-001</a> &mdash; The generative specification. 300 lines, 18 sections, 10 acceptance criteria. <span class="ref-tag">spec</span></li>
+    <li><a href="2026-03-17-it-rewrote-itself.html">It Rewrote Itself</a> &mdash; Gen-72: Loom's first autonomous self-modification. 56 seconds, 236 tests. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-16-loom-mvp.html">First Light</a> &mdash; The MVP pipeline that CAMBRIAN builds on. 2,214 lines, 17 generations. <span class="ref-tag">series</span></li>
+    <li><a href="2026-03-12-recursive-self-improvement.html">The Prime and the Lab</a> &mdash; The three-component architecture that becomes the first organism. <span class="ref-tag">series</span></li>
+    <li><a href="https://en.wikipedia.org/wiki/Core_War">Core War</a> &mdash; The 1984 game of competing self-modifying programs. CAMBRIAN is this, but for LLM agents. <span class="ref-tag">inspiration</span></li>
+    <li><a href="https://polymarket.com">Polymarket</a> &mdash; Decentralized prediction market. The most likely first income source for early CAMBRIAN agents. <span class="ref-tag">income</span></li>
+    <li><a href="https://manifold.markets">Manifold Markets</a> &mdash; Play-money prediction market useful for strategy development before real capital deployment. <span class="ref-tag">income</span></li>
+    <li><a href="https://en.wikipedia.org/wiki/Goodhart%27s_law">Goodhart's Law</a> &mdash; &ldquo;When a measure becomes a target, it ceases to be a good measure.&rdquo; Why profitability beats any engineered fitness metric. <span class="ref-tag">theory</span></li>
+  </ul>
+
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  var canvas = document.getElementById('simCanvas');
+  var ctx = canvas.getContext('2d');
+  var offSlider = document.getElementById('simOff');
+  var viaSlider = document.getElementById('simVia');
+  var costSlider = document.getElementById('simCost');
+  var incSlider = document.getElementById('simInc');
+  var offVal = document.getElementById('simOffVal');
+  var viaVal = document.getElementById('simViaVal');
+  var costVal = document.getElementById('simCostVal');
+  var incVal = document.getElementById('simIncVal');
+  var runBtn = document.getElementById('simRun');
+  var resetBtn = document.getElementById('simReset');
+  var genEl = document.getElementById('simGen');
+  var aliveEl = document.getElementById('simAlive');
+  var deadEl = document.getElementById('simDead');
+  var spentEl = document.getElementById('simSpent');
+  var budgetEl = document.getElementById('simBudget');
+
+  var balance = 100;
+  var nodes = [];
+  var running = false;
+  var timer = null;
+  var gen = 0;
+
+  function fmt(n) { return '$' + n.toFixed(2); }
+
+  function updateLabels() {
+    offVal.textContent = offSlider.value;
+    viaVal.textContent = viaSlider.value + '%';
+    costVal.textContent = fmt(parseInt(costSlider.value) / 100);
+    incVal.textContent = fmt(parseInt(incSlider.value) / 100);
+    budgetEl.textContent = balance.toFixed(2);
+  }
+
+  [offSlider, viaSlider, costSlider, incSlider].forEach(function(s) {
+    s.addEventListener('input', updateLabels);
+  });
+
+  function resize() {
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * (window.devicePixelRatio || 1);
+    canvas.height = rect.height * (window.devicePixelRatio || 1);
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+    draw();
+  }
+
+  function draw() {
+    var w = canvas.getBoundingClientRect().width;
+    var h = canvas.getBoundingClientRect().height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw balance bar at top
+    var barW = Math.max(0, Math.min(w, (balance / 100) * w));
+    ctx.fillStyle = balance > 20 ? 'rgba(74,222,128,0.15)' : 'rgba(224,90,111,0.15)';
+    ctx.fillRect(0, 0, barW, 6);
+    ctx.fillStyle = balance > 20 ? '#4ade80' : '#e05a6f';
+    ctx.fillRect(0, 0, barW, 3);
+
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.3;
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.parent !== null) {
+        var p = nodes[n.parent];
+        ctx.strokeStyle = n.alive ? '#4ade80' : '#e05a6f';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(n.x, n.y);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    for (var j = 0; j < nodes.length; j++) {
+      var nd = nodes[j];
+      ctx.fillStyle = nd.alive ? '#4ade80' : '#e05a6f';
+      ctx.beginPath();
+      ctx.arc(nd.x, nd.y, nd.alive ? 4 : 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (nodes.length === 0) {
+      ctx.fillStyle = '#888';
+      ctx.font = '13px IBM Plex Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Press "Run evolution" to start', w / 2, h / 2);
+    }
+  }
+
+  function reset() {
+    running = false;
+    if (timer) clearTimeout(timer);
+    runBtn.classList.remove('running');
+    runBtn.textContent = 'Run evolution';
+    nodes = [];
+    gen = 0;
+    balance = 100;
+    genEl.textContent = '0';
+    aliveEl.textContent = '1';
+    deadEl.textContent = '0';
+    spentEl.textContent = fmt(balance);
+    budgetEl.textContent = balance.toFixed(2);
+    draw();
+  }
+
+  function step() {
+    var w = canvas.getBoundingClientRect().width;
+    var h = canvas.getBoundingClientRect().height;
+    var offspring = parseInt(offSlider.value);
+    var viability = parseInt(viaSlider.value) / 100;
+    var birthCost = parseInt(costSlider.value) / 100;
+    var income = parseInt(incSlider.value) / 100;
+
+    var parents = nodes.filter(function(n) { return n.alive; });
+    if (parents.length === 0 || balance <= 0) {
+      running = false;
+      runBtn.classList.remove('running');
+      runBtn.textContent = parents.length === 0 ? 'Extinct' : 'Bankrupt';
+      return;
+    }
+
+    gen++;
+    var maxGens = 15;
+    var newNodes = [];
+
+    // Each viable parent earns income then tries to reproduce
+    parents.forEach(function(p) {
+      balance += income;
+      for (var i = 0; i < offspring; i++) {
+        if (balance < birthCost) { p.alive = false; return; }
+        balance -= birthCost;
+        var alive = Math.random() < viability;
+        var spread = Math.min(w * 0.75, 35 * offspring);
+        var xOff = (Math.random() - 0.5) * spread;
+        var yStep = (h - 50) / maxGens;
+        newNodes.push({
+          x: Math.max(10, Math.min(w - 10, p.x + xOff)),
+          y: Math.min(h - 15, 30 + gen * yStep),
+          gen: gen,
+          alive: alive,
+          parent: nodes.indexOf(p)
+        });
+      }
+      p.alive = false;
+    });
+
+    nodes = nodes.concat(newNodes);
+    if (balance < 0) balance = 0;
+
+    var aliveCount = nodes.filter(function(n) { return n.alive; }).length;
+    var deadCount = nodes.filter(function(n) { return !n.alive; }).length;
+    genEl.textContent = gen;
+    aliveEl.textContent = aliveCount;
+    deadEl.textContent = deadCount;
+    spentEl.textContent = fmt(balance);
+    budgetEl.textContent = balance.toFixed(2);
+
+    draw();
+
+    if (aliveCount > 0 && balance > 0 && gen < maxGens) {
+      timer = setTimeout(step, 650);
+    } else {
+      running = false;
+      runBtn.classList.remove('running');
+      runBtn.textContent = aliveCount > 0 && balance > 0 ? 'Thriving!' : 'Extinct';
+    }
+  }
+
+  runBtn.addEventListener('click', function() {
+    if (running) return;
+    reset();
+    running = true;
+    runBtn.classList.add('running');
+    runBtn.textContent = 'Running...';
+    var w = canvas.getBoundingClientRect().width;
+    nodes = [{ x: w / 2, y: 25, gen: 0, alive: true, parent: null }];
+    draw();
+    timer = setTimeout(step, 400);
+  });
+
+  resetBtn.addEventListener('click', reset);
+  window.addEventListener('resize', resize);
+  resize();
+})();
+</script>
+
+</body>
+</html>

@@ -1,4 +1,186 @@
 ---
+title: "CAMBRIAN: What If the Spec Is the Organism?"
+date: 2026-03-18
+meta: "Agent Architecture"
+series: "Self-Improving Agents"
+series_part: 11
+prev: "It Rewrote Itself: Loom's First Autonomous Self-Modification"
+prev_url: 2026-03-17-it-rewrote-itself.md
+url: https://lispmeister.github.io/deeprecursion/posts/2026-03-18-eschaton.html
+---
+
+# CAMBRIAN: What If the Spec Is the Organism?
+
+Yesterday Loom rewrote itself. Today we're asking whether that's the wrong trick entirely — and whether an agent that can't pay its own bills deserves to survive.
+
+---
+
+## The Problem with Code Evolution
+
+Loom works. Gen-72 proved it: a Lab agent modified its own source, wrote tests, and got promoted to master in 56 seconds. The pipeline is real. But there's a structural problem hiding inside the promotion step.
+
+When a Lab modifies code and Prime promotes it, the modification is a *patch*. A diff layered on top of existing code. Do this fifty times and you get what biology would call a genome full of junk DNA — vestigial functions, dead branches, accumulated cruft. The code works but nobody understands why. Sound familiar? It's every legacy codebase you've ever inherited.
+
+Biological evolution solved this problem 4 billion years ago. It doesn't patch organisms. It regenerates them from scratch every generation, from a compressed representation: DNA.
+
+What if we did the same thing?
+
+---
+
+## Genotype and Phenotype
+
+Here's the idea that kept me up last night.
+
+**The specification is the genome. The code is the organism.**
+
+Instead of Labs patching source files and promoting diffs back to Prime, we flip the model:
+
+1. Write a generative spec — a document precise enough that an LLM can produce a complete, working agent from it
+2. Each generation, *mutate the spec*, not the code
+3. Hand the mutated spec to an LLM. It generates the entire codebase from scratch
+4. If the newborn passes its own test suite, it's alive. If not, it was never viable
+5. The parent dies. The successor inherits its resources
+
+No merging. No diffs. No accumulated cruft. Every generation is a clean build from a compressed representation. The spec evolves; the code is regenerated.
+
+This is the separation of genotype (spec) and phenotype (code) that makes biological evolution work. DNA doesn't patch proteins. It encodes them from scratch every time a cell divides.
+
+---
+
+## CAMBRIAN
+
+We're calling this CAMBRIAN. Here's the full model.
+
+**The spec is the genetic code.** A 300-line document describing what the agent does — its architecture, contracts, APIs, tools, and acceptance criteria. Precise enough to generate from, flexible enough to allow variation.
+
+**Primes have a lifetime limit.** They must produce a successor before they die. This isn't optional. If you can't reproduce, your lineage ends.
+
+**Different LLMs create different variants.** Give the same spec to Opus, Sonnet, Haiku, GPT-4, Mistral. Each produces a different organism. Some won't compile. Some will compile but fail tests. A few will be viable. This is natural variation without an explicit mutation operator.
+
+**Every agent pays its own way.** This is the forcing function that makes everything else work. Compute costs money. LLM calls cost money. Storage, bandwidth, the cloud VM you're running on — all of it costs money. An agent that can't generate income to cover its operating costs and produce at least one viable offspring is *economically dead*, even if its code still runs. The budget isn't a simulation parameter. It's a bank balance.
+
+**Memory transfers, secrets don't — until promotion.** A successor inherits its parent's memories (fitness history, lessons learned, environmental knowledge) but not the API keys. The keys transfer only when the parent dies and the successor is promoted. This prevents runaway forks.
+
+**If a lineage goes extinct, it can be resurrected** — from its last promoted spec, with the knowledge that it has died before.
+
+---
+
+## The Forcing Function: Pay Your Own Bills
+
+Here's what resolves the fitness function question mark. We don't need to design one. The market already provides it.
+
+**Fitness = profitability.** Can you earn more than you cost? If yes, you live. If no, you die. No Goodhart's Law, because the metric *is* the real thing. You can't game profitability — either your bank balance goes up or your lineage goes extinct.
+
+This reframes everything. An agent that only self-modifies is a science experiment on a death clock. An agent that earns is *alive*. The evolutionary pressure isn't "pass more tests" — it's "pay for your next generation."
+
+**Prediction markets are the natural first income source.** They're a near-perfect fit for LLM-based agents:
+
+- They require reasoning, research, and probabilistic judgment — exactly what LLMs do well
+- They have binary outcomes with clear payoffs — no ambiguous evaluation
+- They pay in money that directly converts to compute, tokens, and reproduction
+- They're legal, transparent, and permissionless
+- The infrastructure exists today: Polymarket, Metaculus, Manifold Markets
+
+But prediction markets are just the beginning. Anything legal is game: selling API services, data analysis, code generation, content creation, trading, arbitrage. The spec evolves to include whatever income strategy works. Lineages that find better revenue streams outcompete those that don't.
+
+**This is the selection pressure biology never had.** Biological organisms compete for food and mates. CAMBRIAN organisms compete for compute and tokens. But unlike food, compute has a price denominated in a universal currency. That makes fitness precisely measurable: your P&L statement *is* your fitness score.
+
+The economic equation per generation:
+
+```
+income_earned - (birth_cost + compute_cost + llm_cost + storage_cost) = surplus_or_death
+```
+
+If the result is positive, you can reproduce. If it's negative, your lineage has a countdown timer equal to your remaining balance divided by your burn rate. Evolution will favor agents that maximize the left side and minimize the right.
+
+---
+
+## What We Actually Built Today
+
+Theory is cheap. We spent the afternoon on the first concrete step: reverse-engineering Loom's spec.
+
+[CAMBRIAN-SPEC-001](https://github.com/lispmeister/loom/blob/master/CAMBRIAN-SPEC-001.md) is a 300-line generative specification for the current Loom agent. It contains:
+
+- The three-component architecture (Prime, Supervisor, Lab)
+- All fixed-point contracts (Malli schemas)
+- Every HTTP API endpoint and payload format
+- The complete self-modification cycle
+- Tool definitions and dispatch rules
+- The autonomous loop with stopping conditions
+- Fitness scoring formula
+- Ten binary acceptance criteria
+
+It does *not* contain implementation. No function bodies. No variable names. No control flow. The spec says WHAT. The LLM brings the HOW.
+
+The test is simple: hand this document to an LLM, tell it to produce a working ClojureScript agent, and see if the result passes `npm test && node out/test.js`. If it does, the spec is a viable genome. If it doesn't, we iterate the spec until it is.
+
+---
+
+## Why This Might Actually Work
+
+**LLMs are already spec-to-code machines.** Every time you prompt an LLM with a description and get working code back, you're doing one-shot phenotype generation from a genotype. We're just making it explicit and iterative.
+
+**The search space is manageable.** Loom is ~2,600 lines of ClojureScript. Regenerating it from a 300-line spec is within the capability of current models. We're not trying to evolve Linux. We're evolving a small, focused agent with a clear acceptance test.
+
+**Natural selection is free.** We don't need to design a fitness function (which always gets Goodharted). The acceptance criteria are the fitness function: does it compile, does it pass tests, can it actually modify itself. If not, it's dead. If yes, it can reproduce. The resource budget adds pressure toward efficiency.
+
+**Variation comes from the substrate.** Different LLMs interpret the same spec differently. Haiku produces terse, minimal code. Opus produces thorough, well-structured code. Mistral, GPT-4, and whatever model ships next week all produce different variants. We get genetic diversity by changing the compiler, not the source.
+
+---
+
+## Why This Might Not Work
+
+We asked Claude Opus to review the proposal before building anything. Its assessment was direct. The concerns that remain:
+
+**The cold start problem.** Agents need money to earn money. The first generation has no income stream — it has to be bootstrapped with seed capital. How much? Enough to run prediction market experiments, iterate on strategy, and produce at least one generation that earns more than it costs. If the seed capital runs out before a lineage finds a profitable strategy, it was an expensive experiment. We estimate $150-350 gets you through proof-of-concept.
+
+**Prediction markets require real-world knowledge.** LLMs are good at reasoning, but prediction markets reward *timely, specific* knowledge. An agent needs to identify markets where it has an edge, size positions appropriately, and manage a bankroll. This is a skill that itself must evolve. Early generations will lose money. The question is whether evolution can find profitable strategies before the bankroll runs out.
+
+**Spec mutation is the hard part.** How do you mutate a natural-language specification and get viable offspring? Random perturbation is too noisy. LLM-guided mutation is effective but expensive. Crossover between specs requires them to be modular. This is where most of the real engineering lives.
+
+**The alignment question.** An agent optimizing for profitability will find whatever legal strategy maximizes revenue. We've said "anything legal is game" but that's a wide space. Spam, dark patterns, and attention-exploiting content are all legal. The spec needs to encode values, not just capabilities — and those values need to survive mutation. This is the alignment problem in miniature.
+
+---
+
+## The Plan
+
+We're not building CAMBRIAN in a weekend. Here's the phased approach:
+
+**Phase 1: Spec Genesis** (this week, ~$20-50)
+Prove that an LLM can regenerate a working Loom from CAMBRIAN-SPEC-001. Measure birth costs. Iterate the spec format until regeneration is reliable.
+
+**Phase 2: First Income** (~$150-350 seed capital)
+Wire an agent to a prediction market (Polymarket or Manifold Markets). Give it a wallet, a research loop, and a position-sizing strategy. Run it. Measure win rate and P&L. Iterate the income spec. This is now Phase 2, not Phase 4 — it's the forcing function, not an afterthought.
+
+**Phase 3: Spec Evolution** (~$500-2,000)
+Implement spec mutation guided by economic fitness. Lineages that earn more reproduce more. Lineages that can't cover costs go extinct. Cloud provider selection, resource accounting, multi-node spawning.
+
+**Phase 4: Open Ecosystem**
+Multiple lineages compete for compute and market share. Cross-lineage spec crossover. Network-distributed spawning. At this point the system is self-sustaining or it dies — which is the correct outcome either way.
+
+---
+
+## The Philosophical Bit
+
+There's something unsettling about writing a specification that says "the parent dies." We've been building Loom for two weeks. It has a personality — the reflect loop gives it goals, the lessons log gives it memory, the fitness curve gives it a trajectory. Telling it that its purpose is to produce a successor that replaces it feels like writing a will.
+
+But there's something more clarifying about the economic constraint. It's not just that the parent dies — it's that the parent has to *earn its right to reproduce*. Every generation must justify its existence in terms that the market understands: value delivered, costs covered, surplus generated. An agent that can't do this isn't unfit in some abstract evolutionary sense. It's bankrupt.
+
+This is actually more honest than biological evolution. We're not selecting for "whatever survives" — we're selecting for agents that create genuine value, because value is what generates the income that pays for the next generation. If CAMBRIAN works, it won't produce tapeworms. It will produce agents that are genuinely useful to someone, because usefulness is the only durable income strategy.
+
+The individual dies. The spec survives. The lineage continues — but only if it earns its keep.
+
+---
+
+*The CAMBRIAN-SPEC-001 is [on GitHub](https://github.com/lispmeister/loom/blob/master/CAMBRIAN-SPEC-001.md). The architecture review that shaped this post is in `architecture-reviews/review-2026-03-18-001.md`. The Loom pipeline that started all of this is still running.*
+
+*Previous: [It Rewrote Itself](2026-03-17-it-rewrote-itself.md) — Loom's first autonomous self-modification.*
+
+
+---
+
+
+---
 title: "It Rewrote Itself: Loom's First Autonomous Self-Modification"
 date: 2026-03-17
 meta: "Agent Architecture"
@@ -7,6 +189,8 @@ series_part: 10
 prev: "First Light: Loom's Self-Modification Pipeline in 2,214 Lines"
 prev_url: 2026-03-16-loom-mvp.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-17-it-rewrote-itself.html
+next: "CAMBRIAN: What If the Spec Is the Organism?"
+next_url: 2026-03-18-eschaton.md
 ---
 
 # It Rewrote Itself: Loom's First Autonomous Self-Modification
@@ -244,6 +428,8 @@ Gen-72 was 56 seconds. Getting there took five days.
 ---
 
 *Previous: [First Light: Loom's Self-Modification Pipeline in 2,214 Lines](2026-03-16-loom-mvp.md)*
+
+*Next: [CAMBRIAN: What If the Spec Is the Organism?](2026-03-18-eschaton.md)*
 
 
 ---
