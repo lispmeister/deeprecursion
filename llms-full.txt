@@ -1,4 +1,125 @@
 ---
+title: "CAMBRIAN: The Loop Closes"
+date: 2026-03-27
+meta: "Agent Architecture"
+series: "Self-Improving Agents"
+series_part: 12
+prev: "CAMBRIAN: What If the Spec Is the Organism?"
+prev_url: 2026-03-18-cambrian.md
+url: https://lispmeister.github.io/deeprecursion/posts/2026-03-27-cambrian-first-loop.html
+---
+
+# CAMBRIAN: The Loop Closes
+
+Nine days ago I wrote that Phase 1 — proving a spec can regenerate a working agent — would take a week and cost $20–50. Today, Gen-1 ran its generation loop for the first time. It generated Gen-2, submitted it to the test rig, got back a failure report, and rolled it back. All autonomously. The loop works.
+
+It also cost more than $50 and took longer than a week. Here's what that bought us.
+
+---
+
+## What We Thought Phase 1 Was
+
+The March 18 plan: write a spec, hand it to an LLM, watch it generate a working agent, measure costs, iterate. Simple.
+
+What we underestimated: how much precise environmental knowledge has to be encoded in the spec before an LLM can reliably produce code that actually runs. Not code that looks correct. Code that compiles, passes tests, and survives a mechanical verification pipeline in a Python 3.14 Docker container.
+
+Every generation from Gen-2 through Gen-7 died on the same class of bug before we even got the loop running correctly. The LLM wrote test strings containing unescaped newlines inside single-quoted string literals — legal in Python ≤3.11, a `SyntaxError` in 3.14. The spec said "Python 3.14 compatible." That's not enough. The spec needs to say *what Python 3.14 enforces* that earlier versions didn't.
+
+This is the lesson Phase 1 taught: **the spec is not a description of the agent; it's a description of the environment the agent must survive in.** The architecture takes three paragraphs. The environmental constraints take three pages.
+
+---
+
+## What Actually Happened
+
+**March 21.** Language choice: Python. Not because it's ideal — but because LLM coding accuracy correlates with training data density, and Python has more of it than anything else. Python benchmarks at ~93% on standard coding problems; Rust at ~85%; Elixir at ~70%. For M1, the right language is the one the LLM gets right, not the one with the best runtime properties.
+
+**March 24.** Infrastructure: Supervisor (manages container lifecycle, generation history), Test Rig (mechanical verifier: build → test → start → health → report), Docker base image. Gen-0, a hand-crafted test artifact, validated the pipeline before any LLM involvement. This is the principle we're glad we followed: *verify the environment before testing the organism*. If the environment is broken, every organism will fail and the failures will be misleading.
+
+**March 24–26.** Gen-1 required three iterations to pass the test rig. The bugs found along the way weren't trivial: the `/stats generation` field has to return the artifact's *own* generation number (set from an env var at startup), not the next generation the loop is about to produce — those diverge immediately in any real deployment. Tests run before the server starts, so they can't hit localhost; they need an in-process test client. The Docker socket on macOS is not at `/var/run/docker.sock` when using Docker Desktop — it's at `~/.docker/run/docker.sock` and `aiodocker` won't follow the symlink.
+
+These aren't hard problems. They're the kind of problems you only find by running the thing.
+
+**March 26.** Gen-1 promoted. All 5 pipeline stages passing, all 3 contracts passing.
+
+**March 27 (morning).** First autonomous run attempt. Gen-2 through Gen-7 all failed with Python 3.14 syntax errors in the test strings for the file parser. The LLM understands the rule when prompted — it just doesn't apply it reliably while generating 400 lines of code. Sonnet 4.6 failed this consistently across all retries. An Opus 4.6 probe (5 attempts) passed 4/4.
+
+Two other bugs found this morning: the parser itself was broken. The original `parse_files()` used a dotall regex that stopped at the first `</file>` tag — which is also what the LLM generates *inside test fixture strings*. Even a perfectly generated `test_generate.py` would be silently truncated by Prime's own extraction step. Fixed by changing the closing delimiter to `</file:end>` (the colon makes it impossible to appear in natural content) and replacing the regex with a 20-line state machine.
+
+**March 27 (afternoon).** Spec updated to v0.11.0. Gen-1 code brought up to spec. The loop ran.
+
+---
+
+## The Loop
+
+At 12:14:35, Gen-1 started inside a Docker container with the artifacts root mounted at `/workspace`. It served `/health` and `/stats` on port 8401 and launched its generation loop.
+
+At 12:14:35, it called the Anthropic API with the spec and generation history as context. Sonnet 4.6, 11,553 input tokens.
+
+At 12:17:21 — two minutes and 46 seconds later — it received a response: 15,125 output tokens, a complete Gen-2 codebase, 12 files. It parsed the files, wrote them to disk, built the manifest, and called `POST /spawn` on the Supervisor.
+
+The Supervisor created a `gen-2` branch in the artifacts repo, started a test rig container with Gen-2 mounted as `/workspace`, and returned `{"ok": true}`.
+
+At 12:17:21, the test rig started. Twelve seconds later:
+
+- **Manifest:** ✓
+- **Build:** ✓ (12,346ms — installing dependencies from scratch)
+- **Test:** ✗ — 5 of 59 tests failed
+
+Gen-2 used `@unittest_run_loop`, a decorator deprecated in aiohttp 3.8+ that's unnecessary when `pytest-asyncio` runs in AUTO mode. The LLM generated tests correctly structured for an older async testing pattern. 54 tests passed. 5 failed.
+
+Gen-1 received the viability report. Status: non-viable. It called `/rollback`. The Supervisor tagged the artifact `gen-2-failed-3` and deleted the branch. Gen-1 built a retry prompt with the full diagnostics and escalated to Opus 4.6.
+
+Opus returned HTTP 529: overloaded. Three times in a row. Retries exhausted. Generation loop stopped. Gen-1 kept serving `/health`.
+
+Total tokens for the loop: 26,678. Estimated cost: ~$0.08.
+
+---
+
+## What The Loop Got Right
+
+The loop mechanics are correct. Every step worked as designed:
+
+- Gen-1 read generation history from the Supervisor and computed the right generation number
+- The LLM call used streaming (required for `max_tokens=32768` — another thing the spec now states explicitly)
+- File parsing handled the 12 files without truncation
+- The manifest was built correctly with the right hash algorithm
+- The Supervisor created the branch, ran the test rig, wrote the viability report
+- Gen-1 polled the Supervisor, received the result, and made the correct promote/rollback decision
+- The retry prompt carried the full failure diagnostics to the next attempt
+
+Gen-2's failures are fixable. They're exactly the kind of thing a retry prompt handles: specific test failures with stack traces, deprecated API usage, TypeErrors with clear messages. If Opus hadn't been overloaded, there would have been a Gen-3 attempt within seconds.
+
+---
+
+## One Architecture Clarification Worth Noting
+
+The test rig is a verifier, not an execution environment. It starts Prime, checks `/health` and contracts, then kills it. The generation loop never runs in this path.
+
+To actually reproduce, Gen-1 runs as a long-running process mounted against the artifacts root — not the gen-1 subdirectory, but the root, so it can write `gen-2/` in the right place for the Supervisor to find. The test rig container is ephemeral; the organism is persistent.
+
+This seems obvious in retrospect. It wasn't obvious before we tried to run it.
+
+---
+
+## Where Phase 2 Actually Sits
+
+The March 18 post put "first income" at Phase 2, estimated at $150–350 seed capital, starting after a week of Phase 1.
+
+Revised view: Phase 1 isn't complete until self-reproduction is reliable — not just once, but consistently, across retries, with the retry prompt actually fixing the failures. Gen-2's failure was fixable. We need to see a generation loop produce a viable offspring before calling Phase 1 done.
+
+The good news: the first obstacle (getting the loop to run at all) is cleared. The remaining work is convergence: does the retry prompt, with full failure diagnostics, guide the LLM to a passing generation? We think yes. The failures are specific and mechanical. The next run will use Sonnet for all retries, and Gen-2's `@unittest_run_loop` failures will be in the retry context.
+
+Phase 2 — economic viability, prediction markets, paying the bills — is still the goal. We just have more respect now for how much "reliable self-reproduction" actually entails.
+
+---
+
+*Previous: [CAMBRIAN: What If the Spec Is the Organism?](2026-03-18-cambrian.md)*
+
+
+---
+
+
+---
 title: "CAMBRIAN: What If the Spec Is the Organism?"
 date: 2026-03-18
 meta: "Agent Architecture"
@@ -6,6 +127,8 @@ series: "Self-Improving Agents"
 series_part: 11
 prev: "It Rewrote Itself: Loom's First Autonomous Self-Modification"
 prev_url: 2026-03-17-it-rewrote-itself.md
+next: "CAMBRIAN: The Loop Closes"
+next_url: 2026-03-27-cambrian-first-loop.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-18-cambrian.html
 ---
 
@@ -175,261 +298,6 @@ The individual dies. The spec survives. The lineage continues — but only if it
 *The CAMBRIAN-SPEC-001 is [on GitHub](https://github.com/lispmeister/loom/blob/master/CAMBRIAN-SPEC-001.md). The architecture review that shaped this post is in `architecture-reviews/review-2026-03-18-001.md`. The Loom pipeline that started all of this is still running.*
 
 *Previous: [It Rewrote Itself](2026-03-17-it-rewrote-itself.md) — Loom's first autonomous self-modification.*
-
-
----
-
-
----
-title: "It Rewrote Itself: Loom's First Autonomous Self-Modification"
-date: 2026-03-17
-meta: "Agent Architecture"
-series: "Self-Improving Agents"
-series_part: 10
-prev: "First Light: Loom's Self-Modification Pipeline in 2,214 Lines"
-prev_url: 2026-03-16-loom-mvp.md
-url: https://lispmeister.github.io/deeprecursion/posts/2026-03-17-it-rewrote-itself.html
-next: "CAMBRIAN: What If the Spec Is the Organism?"
-next_url: 2026-03-18-cambrian.md
----
-
-# It Rewrote Itself: Loom's First Autonomous Self-Modification
-
-Yesterday we had a pipeline. Today it did something with it.
-
-At 19:24 UTC on March 17, 2026, a ClojureScript agent running inside an Apple Containerization VM opened its own source code, decided two private functions should be public, wrote 63 lines of tests to prove they work, and committed. A second agent — running outside the container — pulled the branch, ran 236 tests, asked an LLM to review the diff, and promoted the change to master. No human touched a file. The whole thing took 56 seconds.
-
-This is gen-72. It is the first time Loom autonomously modified its own agent code, verified the modification, and promoted it. But the real story isn't the 56 seconds that worked. It's the 16 generations that didn't.
-
----
-
-## The Bet
-
-Five posts ago we made a specific claim: an agent that rewrites one of its own functions, tests the result in a Lab container, and promotes the improvement is worth more than the entire blog series that described it. The [MVP post](2026-03-16-loom-mvp.md) proved the pipeline ran — containers booted, branches propagated, tests executed — but every successful generation was a trivial file operation. Add a comment. Create a text file. Count source files.
-
-We hadn't proven the thing that matters: can the agent change *itself*?
-
----
-
-## Sixteen Failures
-
-We pointed the autonomous loop at the codebase and pressed go. Five runs. Three models. Sixteen generations before the first promotion.
-
-| Run | Model | Gens | Promoted | What Happened |
-|-----|-------|------|----------|---------------|
-| 1 | Haiku | 5 | 0 | Race condition: agent sees "done" before supervisor fetches the branch |
-| 2 | Haiku | 5 | 0 | Gen-58 passes all tests — LLM reviewer rejects it anyway |
-| 3 | Anthropic | 3 | 0 | API credits exhausted mid-run |
-| 4 | Minimax M2.5 | 3 | 0 | Model reads every file in the repo. Writes nothing. |
-| 5 | **Opus 4.6** | **1** | **1** | **56 seconds. Clean. First try.** |
-
-Every failure taught us something we couldn't have learned from unit tests.
-
----
-
-## The Six Bugs That Had to Die
-
-The pipeline looked correct. It passed 142 tests. It had run 17 stable generations of trivial tasks. Then we asked it to do real work autonomously, and six bugs crawled out of the walls.
-
-**1. The race condition.** The agent polls the Lab container directly — `GET /status` — and sees "done." It immediately tries to verify by checking out the Lab's branch. But the supervisor hasn't finished `git fetch` from the container's repo clone yet. `git checkout lab/gen-47` fails: "pathspec did not match any file(s) known to git." The branch exists inside the container. It doesn't exist on the host yet.
-
-Fix: retry loop. Three attempts, two seconds apart. The fetch completes in the gap.
-
-**2. Local changes blocking checkout.** The agent has been modifying `self_modify.cljs` — the same file the Lab changed. `git checkout lab/gen-54` refuses: "Your local changes to the following files would be overwritten." The pipeline never considered that someone might be editing the codebase while it runs.
-
-Fix: `git stash --include-untracked` before checkout, `git stash pop` after returning to master.
-
-**3. .gitignore duplication.** Every Lab spawn appends `lab-worker.js` to `.gitignore`. After 50 generations, that's 50 identical lines. Worse: the diff now includes .gitignore changes in every generation, confusing the LLM reviewer.
-
-Fix: check before appending. One line of regex.
-
-**4. program.md gitignored.** We added `program.md` to `.gitignore` so it wouldn't leak into master. But when .gitignore already had the entry and nothing else changed, `git commit` failed with "nothing to commit" — the Lab's task spec vanished from history.
-
-Fix: stop gitignoring `program.md`. It belongs in the Lab branch. It gets removed during promotion.
-
-**5. The LLM reviewer was too strict.** Gen-58 (Haiku) passed all tests. The code change was valid — it trimmed a tool description to save tokens. The LLM reviewer rejected it because the diff included .gitignore changes and a container-relative path (`/workspace/`). Both are normal Lab artifacts, not bugs.
-
-Fix: updated the review prompt. "IGNORE: changes to .gitignore, minor style differences, hard-coded paths like /workspace/ (Labs run in containers)."
-
-**6. Timeout handler forgot to fetch.** When a Lab times out, the supervisor killed the container but never ran `git fetch` on the Lab's branch. The branch existed in the container's clone but was never copied to the host. Any subsequent verify attempt failed silently.
-
-Fix: fetch on all outcomes — done, failed, and timed out.
-
-None of these bugs showed up in unit tests. They required the full pipeline running against a real LLM, a real container, and real concurrent git operations. This is why you run the thing.
-
----
-
-## The Model Gap
-
-We tested three models as Lab workers. The results are not subtle.
-
-**Haiku ($0.10/generation)** gets close. It reads the right files, understands the task, writes code that mostly works. But "mostly" doesn't survive two-stage verification. Out of 10 Haiku generations, zero promoted. It's a useful prototyping model — cheap enough to iterate on `program.md` design — but it can't land the plane.
-
-**Minimax M2.5 ($0.05/generation, coding plan)** exhibits a behavior we haven't seen documented elsewhere: it reads. And reads. And reads. It opens every file the task references. It opens files the task doesn't reference. It reads the same file twice. Then it reports done, having written nothing. Three generations, three empty branches. The pipeline handled it correctly — verification caught the no-op — but the model simply doesn't write code. This isn't a pipeline bug. It's a model-level behavior.
-
-**Opus 4.6 ($1-2/generation)** did it on the first try. 56 seconds from spawn to done. It made the right architectural call — `defn-` to `defn` for testability, since ClojureScript doesn't support `#'` var access for private functions — wrote 18 test assertions across 6 test functions, and committed. The LLM reviewer approved with high confidence. No retries. No partial work. The entire generation cost less than a cup of bad coffee.
-
-The lesson: model capability is the binding constraint for autonomous self-modification, not infrastructure. The pipeline is the same for all three models. Only one produces promotable code.
-
----
-
-## What Gen-72 Actually Changed
-
-The task was deliberately chosen for safety: add unit tests for two pure helper functions that already existed in `self_modify.cljs`. No new features, no refactors, no behavioral changes. Just tests.
-
-```
- program.md                              | 32 +++++++++++++++
- src/loom/agent/self_modify.cljs         |  4 +--
- test/loom/self_modify_helpers_test.cljs | 63 +++++++++++++++++++++++++++++
- 3 files changed, 97 insertions(+), 2 deletions(-)
-```
-
-The Lab made two changes to existing code (`defn-` → `defn` on two functions) and created a new test file. The test file covers:
-
-- `parse-test-counts` — parses "Ran 42 tests containing 100 assertions.\n0 failures, 0 errors." into structured data
-- `parse-shortstat` — parses "3 files changed, 37 insertions(+), 11 deletions(-)" into structured data
-
-Both are pure functions. No side effects, no mocking, no async. The ideal first target for autonomous modification: low risk, high verifiability, measurable improvement (test count went from 230 to 236, assertions from 589 to 607).
-
-It's not impressive as a code change. It *is* impressive as a proof. The agent read its own source, understood the function signatures, understood why the functions were private and why that matters in ClojureScript, made the right call to change visibility, and wrote tests that exercise edge cases (passing output, failing output, garbage input, missing fields). An agent reasoned about its own code and improved it.
-
----
-
-## Two-Stage Verification
-
-Gen-72 had to pass two independent checks before promotion.
-
-**Stage 1: Tests.** Prime checks out `lab/gen-72`, runs `npm test`, confirms all 236 tests pass with 607 assertions and zero failures. This catches regressions — the Lab's changes didn't break anything that already worked.
-
-**Stage 2: LLM Review.** Prime sends the full diff to an LLM with instructions to evaluate: Does this change do what program.md asked? Does it introduce bugs, vulnerabilities, or regressions? Is the code quality acceptable? The reviewer returns APPROVED or REJECTED with a confidence level and reasoning.
-
-Gen-72: APPROVED, high confidence.
-
-This two-stage approach caught something interesting during earlier runs. Haiku gen-58 *passed all tests* — zero failures, zero errors. The code change was valid (trimming a tool description). But the LLM reviewer rejected it because the diff was cluttered with .gitignore artifacts. That was a false negative — the reviewer was too strict — but it demonstrated the value of the second stage. Tests measure correctness. The LLM measures intent.
-
----
-
-## The Numbers
-
-| Metric | MVP (Mar 16) | Today (Mar 17) |
-|--------|-------------|-----------------|
-| Source files | 19 (2,214 LOC) | 26 (13,503 LOC) |
-| Test files | 13 | 21 |
-| Tests / Assertions | 90 / — | 236 / 607 |
-| Generations run | 17 | 72 |
-| Autonomous promotions | 0 | 1 |
-| Infrastructure bugs found | 5 | 11 |
-| Models tested as Lab workers | 1 (Haiku) | 3 (Haiku, M2.5, Opus) |
-| Beads issues closed | — | 131 of 144 |
-
-The codebase has grown 6x since the MVP — mostly test infrastructure, the autonomous loop driver, the reflect step, fitness scoring, and multi-provider support. The test suite has grown from 90 to 236. Every new component was tested before it was deployed, and then tested again by the autonomous loop breaking it in ways we didn't anticipate.
-
----
-
-## Multi-Provider Support
-
-One discovery from the autonomous runs: you want different models for different roles.
-
-- **Prime** (reflect, verify, review) runs Sonnet. It needs to be smart but not expensive — it's making judgments, not writing code.
-- **Lab** (autonomous code generation) runs Opus. It needs to be precise. A $1 generation that promotes is cheaper than ten $0.10 generations that don't.
-
-Loom now supports split-provider configuration via `.env`:
-
-```bash
-# Prime uses Anthropic Sonnet
-ANTHROPIC_API_KEY=sk-ant-...
-LOOM_MODEL=claude-sonnet-4-20250514
-
-# Lab uses Opus
-LOOM_LAB_MODEL=claude-opus-4-6
-
-# Or use a completely different provider for Labs
-# LOOM_LAB_API_KEY=sk-cp-...
-# LOOM_LAB_API_BASE=https://api.minimax.io/anthropic
-# LOOM_LAB_MODEL=MiniMax-M2.5
-```
-
-Lab inherits from Prime unless overridden. This means you can experiment with different Lab models without touching the Prime configuration — and without risking your orchestration layer.
-
----
-
-## What This Costs
-
-We built a credit check script (`scripts/check-credits.sh`) after burning through API credits mid-run. It sends a 1-token probe to the API, verifies the key works, and estimates the cost of an autonomous run.
-
-| Model | Cost/Generation | Success Rate | Effective Cost/Promotion |
-|-------|----------------|--------------|--------------------------|
-| Haiku | ~$0.10 | 0% (0/10) | — |
-| Minimax M2.5 | ~$0.05 | 0% (0/3) | — |
-| Opus 4.6 | ~$1-2 | 100% (1/1) | ~$1-2 |
-
-One data point isn't a rate. But the pattern is clear: cheap models that can't promote are more expensive than expensive models that can. A 5-generation Opus run costs ~$5-10. A 5-generation Haiku run costs ~$0.50 and produces nothing.
-
-The real cost equation includes Prime overhead: Sonnet runs reflect + review at ~$0.50/generation regardless of Lab model. So the total per-generation cost for an Opus Lab run is ~$2-3.
-
----
-
-## Where We Stand
-
-The pipeline works. Not "works in tests" — works against real models, real containers, real concurrent git operations, after surviving 16 failures that each hardened a different component.
-
-**Proven:**
-- Autonomous spawn → execute → verify → promote cycle
-- Two-stage verification catches both test failures and semantic issues
-- Multi-provider support (tested with 3 providers)
-- Fitness scoring and generation reports
-- CLI workflow (`node out/agent.js spawn/verify/promote`)
-
-**Not yet proven:**
-- Multiple consecutive autonomous promotions (we have 1)
-- Reflect-driven task selection (reflect is implemented but not wired to the autonomous loop end-to-end)
-- Fitness plateau detection in practice
-- Tasks more complex than "add tests for pure functions"
-
----
-
-## What's Next
-
-The bottleneck has shifted. It's no longer infrastructure — that's battle-tested. It's no longer "does it work" — it does. The questions now are:
-
-**Task selection.** Gen-72 was carefully chosen: pure functions, no side effects, low blast radius. What's the next rung? More test coverage is safe and measurable. Small refactors (extract helpers, rename internals) are riskier but more valuable. New features are the end goal but require precise `program.md` specs that the current reflect step may not produce reliably.
-
-**Cost efficiency.** Opus works but isn't cheap. Can Sonnet 4 (when released) hit the sweet spot? Can we improve `program.md` quality enough for Haiku to succeed on simple tasks? The model gap is the main cost lever.
-
-**Fitness gaming.** The current fitness function rewards test count: `score = (tests-run * 10) + assertions - (tokens / 1000)`. An autonomous agent optimizing this could write `(is (= 1 1))` a thousand times and claim improvement. The LLM reviewer is a partial defense — it would probably catch egregious gaming — but we haven't tested adversarial scenarios yet.
-
-**The compelling demo.** "I pointed it at itself and walked away. When I came back, it had improved." Gen-72 is one step short of this. The loop ran once. We need it to run five times, each building on the last, with the reflect step choosing each task. That's the demo.
-
----
-
-## The Lesson
-
-Building a self-modifying agent is not one problem. It's a sequence of failures that each reveal a different assumption.
-
-We assumed branch fetching was synchronous. It isn't. We assumed `.gitignore` management was idempotent. It wasn't. We assumed an LLM reviewer would focus on code quality. It fixated on formatting artifacts. We assumed any model could write code. One of them just reads.
-
-Each of these assumptions was invisible in the spec, invisible in unit tests, and immediately obvious in production. The 16 failed generations before gen-72 weren't wasted work. They were the work. The pipeline that promoted gen-72 is fundamentally different from the pipeline that attempted gen-43 — six bugs fewer, three models tested, and a two-stage verification system tuned by real false negatives.
-
-Self-modification isn't a feature you ship. It's a capability you earn by running the loop until the loop survives.
-
-Gen-72 was 56 seconds. Getting there took five days.
-
----
-
-## References
-
-- [First Light: Loom's Self-Modification Pipeline in 2,214 Lines](2026-03-16-loom-mvp.md) — The MVP field report
-- [The program.md Protocol](2026-03-13-program-md.md) — The steering mechanism for Lab runs
-- [The Prime and the Lab](2026-03-12-recursive-self-improvement.md) — Original architecture spec
-- [The Autoresearch Pattern](2026-03-11-self-improving-agents.md) — Karpathy's blueprint
-- [Apple Containerization](https://github.com/apple/container) — VM-per-container on macOS 26
-- [Pi Coding Agent](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/) — Radical minimalism in agent design
-
----
-
-*Previous: [First Light: Loom's Self-Modification Pipeline in 2,214 Lines](2026-03-16-loom-mvp.md)*
-
-*Next: [CAMBRIAN: What If the Spec Is the Organism?](2026-03-18-cambrian.md)*
 
 
 ---

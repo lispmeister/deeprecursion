@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAMBRIAN: The Loop Closes &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-27-cambrian-first-loop.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong {
+    color: #eeeef4;
+  }
+
+  ul {
+    padding-left: 1.25rem;
+  }
+
+  ul li {
+    margin-bottom: 0.4rem;
+  }
+
+  ol li {
+    margin-bottom: 0.6rem;
+    line-height: 1.65;
+  }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a {
+    color: var(--accent);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  /* Pipeline step-through visualization */
+  .pipeline-demo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .pipeline-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 1.25rem;
+  }
+
+  .pipeline-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .pipeline-step {
+    flex: 1;
+    min-width: 70px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.4rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: all 0.2s;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-circle.pass {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--surface);
+  }
+
+  .step-circle.fail {
+    border-color: #e05a5a;
+    color: #e05a5a;
+    background: var(--surface);
+  }
+
+  .step-circle.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .step-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .step-connector {
+    flex: 0 0 20px;
+    height: 2px;
+    background: var(--border);
+    margin-bottom: 1.2rem;
+  }
+
+  .step-connector.done {
+    background: var(--green);
+  }
+
+  .step-connector.blocked {
+    background: #e05a5a;
+  }
+
+  .pipeline-detail {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    min-height: 100px;
+  }
+
+  .detail-stage {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  .detail-result {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 0.75rem;
+  }
+
+  .detail-result.pass {
+    color: var(--green);
+    background: rgba(80, 200, 120, 0.1);
+    border: 1px solid rgba(80, 200, 120, 0.3);
+  }
+
+  .detail-result.fail {
+    color: #e05a5a;
+    background: rgba(224, 90, 90, 0.1);
+    border: 1px solid rgba(224, 90, 90, 0.3);
+  }
+
+  .detail-result.skip {
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .detail-text {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  .detail-metric {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+
+  .pipeline-nav {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    align-items: center;
+  }
+
+  .pipeline-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .pipeline-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pipeline-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .pipeline-btn:disabled:hover {
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .pipeline-counter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+
+  /* Timeline */
+  .timeline {
+    margin: 1.5rem 0;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .tl-item {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    align-items: start;
+  }
+
+  .tl-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    padding-top: 0.15rem;
+    text-align: right;
+  }
+
+  .tl-body {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    padding-left: 1rem;
+    border-left: 2px solid var(--border);
+  }
+
+  .tl-body strong {
+    color: #eeeef4;
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  /* Cost box */
+  .cost-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .cost-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .cost-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .cost-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  @media (max-width: 600px) {
+    .cost-row {
+      grid-template-columns: 1fr;
+    }
+    .pipeline-steps {
+      gap: 0;
+    }
+  }
+
+  @media (prefers-color-scheme: light) {
+    strong, .cost-value {
+      color: #2a2a32;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>CAMBRIAN: The Loop Closes</h1>
+  <p class="meta">Agent Architecture &middot; March 27, 2026</p>
+
+  <div class="see-also">
+    Part 12 of a series. Previous: <a href="2026-03-18-cambrian.html">CAMBRIAN: What If the Spec Is the Organism?</a>
+  </div>
+
+  <div class="abstract">Nine days ago I wrote that Phase 1 &mdash; proving a spec can regenerate a working agent &mdash; would take a week and cost $20&ndash;50. Today, Gen-1 ran its generation loop for the first time. It generated Gen-2, submitted it to the test rig, got back a failure report, and rolled it back. All autonomously. The loop works. It also cost more than $50 and took longer than a week. Here's what that bought us.</div>
+
+  <hr class="divider">
+
+  <div class="section-header">What We Thought Phase 1 Was</div>
+
+  <p>The March 18 plan: write a spec, hand it to an LLM, watch it generate a working agent, measure costs, iterate. Simple.</p>
+
+  <p>What we underestimated: how much precise environmental knowledge has to be encoded in the spec before an LLM can reliably produce code that actually runs. Not code that looks correct. Code that compiles, passes tests, and survives a mechanical verification pipeline in a Python 3.14 Docker container.</p>
+
+  <p>Every generation from Gen-2 through Gen-7 died on the same class of bug before we even got the loop running correctly. The LLM wrote test strings containing unescaped newlines inside single-quoted string literals &mdash; legal in Python &le;3.11, a <code>SyntaxError</code> in 3.14. The spec said &ldquo;Python 3.14 compatible.&rdquo; That's not enough. The spec needs to say <em>what Python 3.14 enforces</em> that earlier versions didn't.</p>
+
+  <p>This is the lesson Phase 1 taught: <strong>the spec is not a description of the agent; it's a description of the environment the agent must survive in.</strong> The architecture takes three paragraphs. The environmental constraints take three pages.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Actually Happened</div>
+
+  <ul class="timeline">
+    <li class="tl-item">
+      <span class="tl-date">Mar 21</span>
+      <div class="tl-body"><strong>Language choice: Python.</strong> Not because it's ideal &mdash; but because LLM coding accuracy correlates with training data density. Python benchmarks at ~93% on standard coding problems; Rust at ~85%; Elixir at ~70%. For M1, the right language is the one the LLM gets right.</div>
+    </li>
+    <li class="tl-item">
+      <span class="tl-date">Mar 24</span>
+      <div class="tl-body"><strong>Infrastructure validated.</strong> Supervisor, Test Rig, Docker base image. Gen-0, a hand-crafted test artifact, validated the pipeline before any LLM involvement. <em>Verify the environment before testing the organism.</em> If the environment is broken, every organism will fail and the failures will be misleading.</div>
+    </li>
+    <li class="tl-item">
+      <span class="tl-date">Mar 24&ndash;26</span>
+      <div class="tl-body"><strong>Gen-1 required three iterations to pass the test rig.</strong> Bugs found: the <code>/stats generation</code> field must return the artifact's own generation number (set from an env var), not the next generation. Tests run before the server starts &mdash; they need an in-process test client. The Docker socket on macOS is not at <code>/var/run/docker.sock</code> when using Docker Desktop; <code>aiodocker</code> won't follow the symlink.</div>
+    </li>
+    <li class="tl-item">
+      <span class="tl-date">Mar 26</span>
+      <div class="tl-body"><strong>Gen-1 promoted.</strong> All 5 pipeline stages passing, all 3 contracts passing.</div>
+    </li>
+    <li class="tl-item">
+      <span class="tl-date">Mar 27 am</span>
+      <div class="tl-body"><strong>Gen-2 through Gen-7 failed with Python 3.14 syntax errors.</strong> Also found: the parser itself was broken. The original <code>parse_files()</code> used a dotall regex that stopped at the first <code>&lt;/file&gt;</code> tag &mdash; which is also what the LLM generates inside test fixture strings. Fixed by changing the closing delimiter to <code>&lt;/file:end&gt;</code> and replacing the regex with a state machine.</div>
+    </li>
+    <li class="tl-item">
+      <span class="tl-date">Mar 27 pm</span>
+      <div class="tl-body"><strong>Spec updated to v0.11.0. The loop ran.</strong></div>
+    </li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="section-header">The Loop &mdash; Step by Step</div>
+
+  <p>At 12:14:35, Gen-1 started inside a Docker container with the artifacts root mounted at <code>/workspace</code>. Walk through what happened:</p>
+
+  <div class="pipeline-demo" id="pipelineDemo">
+    <div class="pipeline-title">Gen-2 Autonomous Run &mdash; March 27, 12:14</div>
+    <div class="pipeline-steps" id="pipelineSteps"></div>
+    <div class="pipeline-detail" id="pipelineDetail">
+      <div class="detail-stage" id="detailStage"></div>
+      <div class="detail-result" id="detailResult"></div>
+      <div class="detail-text" id="detailText"></div>
+      <div class="detail-metric" id="detailMetric"></div>
+    </div>
+    <div class="pipeline-nav">
+      <button class="pipeline-btn" id="btnPrev">&larr; Prev</button>
+      <button class="pipeline-btn" id="btnNext">Next &rarr;</button>
+      <span class="pipeline-counter" id="stepCounter"></span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">What the Loop Got Right</div>
+
+  <p>The loop mechanics are correct. Every step worked as designed:</p>
+
+  <ul>
+    <li>Gen-1 read generation history from the Supervisor and computed the right generation number</li>
+    <li>The LLM call used streaming (required for <code>max_tokens=32768</code>)</li>
+    <li>File parsing handled the 12 files without truncation</li>
+    <li>The manifest was built correctly with the right hash algorithm</li>
+    <li>The Supervisor created the branch, ran the test rig, wrote the viability report</li>
+    <li>Gen-1 polled the Supervisor, received the result, and made the correct promote/rollback decision</li>
+    <li>The retry prompt carried the full failure diagnostics to the next attempt</li>
+  </ul>
+
+  <p>Gen-2's failures are fixable. They're exactly the kind of thing a retry prompt handles: specific test failures with stack traces, deprecated API usage, TypeErrors with clear messages. If Opus hadn't been overloaded, there would have been a Gen-3 attempt within seconds.</p>
+
+  <div class="cost-row">
+    <div class="cost-cell">
+      <div class="cost-label">Total tokens</div>
+      <div class="cost-value">26,678</div>
+    </div>
+    <div class="cost-cell">
+      <div class="cost-label">Loop cost</div>
+      <div class="cost-value">~$0.08</div>
+    </div>
+    <div class="cost-cell">
+      <div class="cost-label">Files generated</div>
+      <div class="cost-value">12</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">One Architecture Clarification Worth Noting</div>
+
+  <p>The test rig is a verifier, not an execution environment. It starts Prime, checks <code>/health</code> and contracts, then kills it. The generation loop never runs in this path.</p>
+
+  <p>To actually reproduce, Gen-1 runs as a long-running process mounted against the artifacts root &mdash; not the gen-1 subdirectory, but the root, so it can write <code>gen-2/</code> in the right place for the Supervisor to find. The test rig container is ephemeral; the organism is persistent.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0; font-size: 0.88rem; line-height: 1.6;"><strong>Test rig vs. organism.</strong> These are separate concerns. The test rig verifies an artifact exists and passes contracts. The organism runs against the full artifacts tree and spawns offspring. We confused these for two days. It seems obvious in retrospect.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">Where Phase 2 Actually Sits</div>
+
+  <p>The March 18 post put &ldquo;first income&rdquo; at Phase 2, estimated at $150&ndash;350 seed capital, starting after a week of Phase 1.</p>
+
+  <p>Revised view: Phase 1 isn't complete until self-reproduction is reliable &mdash; not just once, but consistently, across retries, with the retry prompt actually fixing the failures. Gen-2's failure was fixable. We need to see a generation loop produce a viable offspring before calling Phase 1 done.</p>
+
+  <p>The good news: the first obstacle (getting the loop to run at all) is cleared. The remaining work is convergence: does the retry prompt, with full failure diagnostics, guide the LLM to a passing generation? We think yes. The failures are specific and mechanical. The next run will use Sonnet for all retries, and Gen-2's failures will be in the retry context.</p>
+
+  <p>Phase 2 &mdash; economic viability, prediction markets, paying the bills &mdash; is still the goal. We just have more respect now for how much &ldquo;reliable self-reproduction&rdquo; actually entails.</p>
+
+  <hr class="divider">
+
+  <p><em>Previous: <a href="2026-03-18-cambrian.html">CAMBRIAN: What If the Spec Is the Organism?</a></em></p>
+
+</main>
+
+<footer class="site-footer">
+  <p>Deeprecursion &mdash; <a href="../index.html">Research</a> &middot; <a href="../about.html">About</a></p>
+</footer>
+
+<script>
+(function() {
+  var steps = [
+    {
+      label: 'Generate',
+      result: 'pass',
+      stage: '1 — LLM Call',
+      status: 'pass',
+      text: 'Gen-1 called the Anthropic API with the spec and generation history as context. Streaming enabled (required for max_tokens=32768). Two minutes and 46 seconds later: 15,125 output tokens. A complete Gen-2 codebase, 12 files.',
+      metric: '11,553 input tokens · 15,125 output tokens · 2m 46s · Sonnet 4.6'
+    },
+    {
+      label: 'Parse',
+      result: 'pass',
+      stage: '2 — File Extraction',
+      status: 'pass',
+      text: 'parse_files() ran the state machine against the LLM response. 12 files extracted without truncation. The new </file:end> delimiter ensured no false-positive matches inside test fixture strings.',
+      metric: '12 files · state machine (not regex)'
+    },
+    {
+      label: 'Manifest',
+      result: 'pass',
+      stage: '3 — Supervisor: Manifest Check',
+      status: 'pass',
+      text: 'Supervisor received POST /spawn. Created gen-2 branch in artifacts repo, mounted Gen-2, started test rig container. Manifest check: all required fields present, hashes computed.',
+      metric: 'Stage: manifest · ✓ pass'
+    },
+    {
+      label: 'Build',
+      result: 'pass',
+      stage: '4 — Supervisor: Build',
+      status: 'pass',
+      text: 'pip install -r requirements.txt ran inside the test rig container. All dependencies resolved from scratch. No cached layers.',
+      metric: 'Stage: build · ✓ pass · 12,346ms'
+    },
+    {
+      label: 'Test',
+      result: 'fail',
+      stage: '5 — Supervisor: Test Suite',
+      status: 'fail',
+      text: 'python -m pytest tests/ -v ran. 54 of 59 tests passed. 5 failed. Root cause: Gen-2 used @unittest_run_loop, a decorator deprecated in aiohttp 3.8+ that is unnecessary when pytest-asyncio runs in AUTO mode. The LLM generated tests for an older async testing pattern.',
+      metric: 'Stage: test · 54 pass · 5 fail · STOPPED HERE'
+    },
+    {
+      label: 'Rollback',
+      result: 'pass',
+      stage: '6 — Rollback & Retry',
+      status: 'pass',
+      text: 'Gen-1 received the viability report: non-viable. Called /rollback. Supervisor tagged artifact gen-2-failed-3 and deleted the branch. Gen-1 built a retry prompt with full diagnostics and escalated to Opus 4.6 — which returned HTTP 529 (overloaded) three times. Retries exhausted. Loop stopped. Gen-1 kept serving /health.',
+      metric: 'Total loop cost: ~$0.08'
+    }
+  ];
+
+  var current = 0;
+
+  var stepsContainer = document.getElementById('pipelineSteps');
+  var detailStage = document.getElementById('detailStage');
+  var detailResult = document.getElementById('detailResult');
+  var detailText = document.getElementById('detailText');
+  var detailMetric = document.getElementById('detailMetric');
+  var btnPrev = document.getElementById('btnPrev');
+  var btnNext = document.getElementById('btnNext');
+  var counter = document.getElementById('stepCounter');
+
+  // Build step nodes
+  var circleEls = [];
+  var connectorEls = [];
+
+  steps.forEach(function(step, i) {
+    var stepEl = document.createElement('div');
+    stepEl.className = 'pipeline-step';
+    stepEl.setAttribute('data-index', i);
+
+    var circle = document.createElement('div');
+    circle.className = 'step-circle';
+    circle.textContent = i + 1;
+    circleEls.push(circle);
+
+    var label = document.createElement('div');
+    label.className = 'step-label';
+    label.textContent = step.label;
+
+    stepEl.appendChild(circle);
+    stepEl.appendChild(label);
+
+    stepEl.addEventListener('click', function() {
+      current = parseInt(this.getAttribute('data-index'));
+      render();
+    });
+
+    stepsContainer.appendChild(stepEl);
+
+    if (i < steps.length - 1) {
+      var conn = document.createElement('div');
+      conn.className = 'step-connector';
+      connectorEls.push(conn);
+      stepsContainer.appendChild(conn);
+    }
+  });
+
+  function render() {
+    var step = steps[current];
+
+    // Update circles
+    circleEls.forEach(function(c, i) {
+      c.className = 'step-circle';
+      if (i === current) {
+        c.classList.add('active');
+      } else if (i < current) {
+        c.classList.add(steps[i].status);
+      }
+    });
+
+    // Update connectors
+    connectorEls.forEach(function(c, i) {
+      c.className = 'step-connector';
+      if (i < current - 1) {
+        c.classList.add('done');
+      } else if (i === current - 1) {
+        c.classList.add(steps[i].status === 'fail' ? 'blocked' : 'done');
+      }
+    });
+
+    // Update detail panel
+    detailStage.textContent = step.stage;
+
+    detailResult.className = 'detail-result ' + step.result;
+    if (step.result === 'pass') {
+      detailResult.textContent = '\u2713 pass';
+    } else if (step.result === 'fail') {
+      detailResult.textContent = '\u2717 fail';
+    } else {
+      detailResult.textContent = step.result;
+    }
+
+    detailText.textContent = step.text;
+    detailMetric.textContent = step.metric;
+
+    // Update nav
+    btnPrev.disabled = current === 0;
+    btnNext.disabled = current === steps.length - 1;
+    counter.textContent = (current + 1) + ' / ' + steps.length;
+  }
+
+  btnPrev.addEventListener('click', function() {
+    if (current > 0) { current--; render(); }
+  });
+
+  btnNext.addEventListener('click', function() {
+    if (current < steps.length - 1) { current++; render(); }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
