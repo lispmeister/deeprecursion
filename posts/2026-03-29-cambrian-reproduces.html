@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAMBRIAN: It Reproduces &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-03-29-cambrian-reproduces.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong { color: #eeeef4; }
+
+  ul { padding-left: 1.25rem; }
+  ul li { margin-bottom: 0.4rem; }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a { color: var(--accent); }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  /* Stat boxes */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  .stat-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 0.75rem;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  /* Generation tree */
+  .gen-tree {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .gen-tree-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  .gen-canvas {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .gen-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 600px;
+  }
+
+  .gen-node-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 52px;
+    cursor: pointer;
+  }
+
+  .gen-node {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: all 0.15s;
+  }
+
+  .gen-node.promoted {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(90, 224, 160, 0.06);
+  }
+
+  .gen-node.failed {
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(224, 90, 111, 0.06);
+  }
+
+  .gen-node.seed {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .gen-node.selected {
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+
+  .gen-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    margin-top: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .gen-connector {
+    flex: 0 0 12px;
+    height: 2px;
+    background: var(--border);
+    margin-bottom: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .gen-connector.ok { background: var(--green); opacity: 0.5; }
+  .gen-connector.fail { background: var(--red); opacity: 0.4; }
+
+  /* Detail panel */
+  .gen-detail {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-top: 1.25rem;
+    min-height: 90px;
+  }
+
+  .gen-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .gen-detail-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  .gen-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+  }
+
+  .gen-badge.promoted {
+    color: var(--green);
+    background: rgba(90, 224, 160, 0.1);
+    border: 1px solid rgba(90, 224, 160, 0.3);
+  }
+
+  .gen-badge.failed {
+    color: var(--red);
+    background: rgba(224, 90, 111, 0.1);
+    border: 1px solid rgba(224, 90, 111, 0.3);
+  }
+
+  .gen-badge.seed {
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(123, 111, 222, 0.3);
+  }
+
+  .gen-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .gen-stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+
+  .gen-stat-value {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+    margin-top: 0.15rem;
+  }
+
+  .gen-note {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    font-style: italic;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .gen-hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 600px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .gen-detail-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (prefers-color-scheme: light) {
+    strong, .stat-value, .gen-detail-title { color: #2a2a32; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>CAMBRIAN: It Reproduces</h1>
+  <p class="meta">Agent Architecture &middot; March 29, 2026</p>
+
+  <div class="see-also">
+    Part 13 of a series. Previous: <a href="2026-03-27-cambrian-first-loop.html">CAMBRIAN: The Loop Closes</a>
+  </div>
+
+  <div class="abstract">Two days ago, Gen-2 failed with 5 tests out of 59 and Opus was overloaded. Today, Gen-1 produced five viable offspring in 44 minutes. M1 is done.</div>
+
+  <hr class="divider">
+
+  <div class="section-header">Two Spec Bugs, Not Code Bugs</div>
+
+  <p>The Part&nbsp;12 failures &mdash; and every failed generation from Gen-2 through Gen-7 in the previous run &mdash; had a common root: the spec wasn't describing the environment precisely enough. We fixed two gaps.</p>
+
+  <p><strong>Streaming requirement.</strong> The Anthropic SDK raises an error when you call <code>client.messages.create()</code> with <code>max_tokens=32768</code>. The spec said &ldquo;call the API.&rdquo; It needed to say <em>how</em>: use <code>async with client.messages.stream(...) as stream</code> and <code>await stream.get_final_message()</code>. Every generation that used the non-streaming call hit a timeout-class error before it could even generate output.</p>
+
+  <p><strong>aiohttp test pattern.</strong> Gen-2&rsquo;s 5 failing tests used <code>@unittest_run_loop</code>, a decorator removed in aiohttp 3.8+. The spec mentioned aiohttp as a dependency. It needed to show the correct fixture pattern: <code>aiohttp_client</code> from <code>pytest-aiohttp</code>, <code>aiohttp_server</code> for mock servers, and <code>asyncio_mode&nbsp;=&nbsp;"auto"</code> in pytest.ini. Once the spec included a concrete example, the LLM stopped generating the old pattern.</p>
+
+  <p>Both patches landed in CAMBRIAN-SPEC-005 v0.11.0 and in Gen-1&rsquo;s <code>SYSTEM_PROMPT</code>. After that, neither error class appeared again across any of the 8 subsequent generation attempts.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0; font-size: 0.88rem; line-height: 1.6;">The lesson from Part&nbsp;12 bears repeating: <strong>the spec is a description of the environment, not the agent.</strong> Architectural intent takes paragraphs. Environmental constraints take pages.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">The Run &mdash; All 10 Generations</div>
+
+  <p>Gen-1 ran autonomously for 44 minutes, producing 10 generations in total &mdash; 5 viable offspring out of 10 attempts. Click any generation to see details.</p>
+
+  <div class="gen-tree">
+    <div class="gen-tree-title">Generation lineage &mdash; March 29, 2026</div>
+    <div class="gen-canvas">
+      <div class="gen-row" id="genRow"></div>
+    </div>
+    <div class="gen-hint">Click a generation to inspect it</div>
+    <div class="gen-detail" id="genDetail">
+      <div class="gen-detail-header">
+        <span class="gen-detail-title" id="detailTitle"></span>
+        <span class="gen-badge" id="detailBadge"></span>
+      </div>
+      <div class="gen-detail-stats" id="detailStats"></div>
+      <div class="gen-note" id="detailNote"></div>
+    </div>
+  </div>
+
+  <p>The pattern that emerges: every failed generation failed on exactly 1 test out of 58&ndash;69 passing. These aren&rsquo;t architectural failures. They&rsquo;re test-level mismatches where the LLM&rsquo;s generated test asserted subtly wrong behavior &mdash; always self-corrected on the next retry, with the failure diagnostics in context.</p>
+
+  <p>Two moments worth noting:</p>
+
+  <p><strong>Gen-4: parse repair.</strong> Gen-4&rsquo;s LLM response had an unclosed <code>&lt;file&gt;</code> block. The parse repair loop caught it, sent the malformed response back to the LLM with an error message, received a corrected version, and the artifact was written with all 16 files intact. This mechanism &mdash; added to guard against truncated responses &mdash; worked exactly as designed on its first real invocation.</p>
+
+  <p><strong>Gen-6: retry with diagnostics.</strong> Gen-5 failed with 1&nbsp;of&nbsp;58 tests. The retry prompt carried the exact failure &mdash; test name, assertion, actual vs. expected &mdash; to Gen-6. Gen-6 corrected it and passed 69/69 tests, the highest test count in the run. The informed retry isn&rsquo;t &ldquo;try again with the same prompt.&rdquo; It&rsquo;s &ldquo;here&rsquo;s what broke, fix it.&rdquo;</p>
+
+  <hr class="divider">
+
+  <div class="section-header">By the Numbers</div>
+
+  <div class="stat-row">
+    <div class="stat-cell">
+      <div class="stat-label">Cumulative tokens</div>
+      <div class="stat-value">474,834</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Wall time</div>
+      <div class="stat-value">44 min</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Est. cost</div>
+      <div class="stat-value">~$1.50</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">First-try rate</div>
+      <div class="stat-value">50%</div>
+    </div>
+  </div>
+
+  <p>The 50% first-try success rate is higher than expected given that the retry mechanism exists specifically for the failure case. In practice, &ldquo;fail &rarr; diagnose &rarr; succeed&rdquo; in two attempts is the normal path, not a failure mode. Every promoted generation ran 100% of its tests.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What This Means</div>
+
+  <p>M1 was defined as: Prime reads spec &rarr; generates codebase &rarr; offspring passes test rig &rarr; offspring can do the same. Every promoted generation is a complete, working code factory. Gen-8, Gen-9, and Gen-10 are each capable of running this exact loop and producing the next generation. The chain is real.</p>
+
+  <p>It also means the two known blockers from Part&nbsp;12 &mdash; streaming errors and deprecated test patterns &mdash; were eliminated by spec precision, not code sophistication. The LLM is capable of generating correct code when the spec tells it what &ldquo;correct&rdquo; means in this specific environment.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Comes Next</div>
+
+  <p>M1 proves that spec &rarr; code &rarr; verification &rarr; promotion is a stable loop. M2 asks the harder question: <strong>what if the spec itself is the thing that evolves?</strong></p>
+
+  <ul>
+    <li><strong>Container isolation hardening.</strong> Currently, the organism and test rig share a filesystem volume. Under evolutionary pressure, a sufficiently adversarial spec could describe code that writes fake viability reports. This gets closed before any population runs.</li>
+    <li><strong>Fitness vectors.</strong> Right now, viability is binary: 100% tests pass or it&rsquo;s rolled back. Real evolution needs gradients &mdash; test count, source lines, token efficiency, dependency minimalism. A 15-dimension fitness vector lets the system distinguish &ldquo;barely viable&rdquo; from &ldquo;robustly viable.&rdquo;</li>
+    <li><strong>Spec mutation with grammar constraints.</strong> Unconstrained LLM mutation of a natural-language spec wastes attempts on syntactically broken variants. A formal spec grammar gates mutations to the valid space before evaluation.</li>
+    <li><strong>Population campaigns.</strong> Instead of one lineage evolving sequentially, run short parallel campaigns &mdash; evaluate 5&ndash;10 variants of a spec change, promote the fittest, discard the rest.</li>
+  </ul>
+
+  <p>The research is done. We studied A-Evolve (Amazon&rsquo;s open-source agent evolution framework), ran an adversarial review of our assumptions, and revised the M2 proposal accordingly. The architecture maps to what A-Evolve calls &ldquo;observe &rarr; evolve &rarr; gate &rarr; reload.&rdquo; The difference: we&rsquo;re evolving specs, not agent behavior &mdash; genotype mutation rather than phenotype tuning.</p>
+
+  <p>The honest caveat: reproduction is a solved problem. Evolution is harder. Selection pressure can optimize for the wrong things. Fitness functions can be gamed. Self-referential fitness &mdash; where the organism evolves to satisfy its own fitness measure rather than the underlying goal &mdash; is a real risk, not a theoretical one. The next post will have more to say about that when the first M2 campaign runs.</p>
+
+  <hr class="divider">
+
+  <p><em>Previous: <a href="2026-03-27-cambrian-first-loop.html">CAMBRIAN: The Loop Closes</a></em></p>
+
+</main>
+
+<footer class="site-footer">
+  <p>Deeprecursion &mdash; <a href="../index.html">Research</a> &middot; <a href="../about.html">About</a></p>
+</footer>
+
+<script>
+(function() {
+  var gens = [
+    { id: 1,  parent: 0, outcome: 'seed',     tests: null, total: null, tokIn: 0,     tokOut: 0,     note: 'Hand-crafted seed organism. Passed all 5 test rig stages and 3 health contracts. The fixed point everything else builds on.' },
+    { id: 2,  parent: 1, outcome: 'failed',   tests: 54,   total: 59,   tokIn: 11553, tokOut: 15125, note: 'Used @unittest_run_loop (removed in aiohttp 3.8+) and client.messages.create() with max_tokens=32768 (SDK error). The two spec bugs this run was designed to fix.' },
+    { id: 3,  parent: 2, outcome: 'failed',   tests: 62,   total: 63,   tokIn: 18656, tokOut: 17625, note: 'Retry with full diagnostics. ParseError message format mismatch between implementation and test expectation. 1 failure.' },
+    { id: 4,  parent: 3, outcome: 'promoted', tests: 63,   total: 63,   tokIn: 18656, tokOut: 17625, note: 'Parse repair triggered: LLM response had an unclosed file block. Repair loop caught it, sent it back, received corrected output. 16 files, all 63 tests pass.' },
+    { id: 5,  parent: 4, outcome: 'failed',   tests: 57,   total: 58,   tokIn: 18133, tokOut: 30235, note: 'Test asserted wrong behavior: expected state machine to stop at inline closing tag within a line. Spec-correct behavior: only stop at a line that IS the closing tag. 1 failure.' },
+    { id: 6,  parent: 5, outcome: 'promoted', tests: 69,   total: 69,   tokIn: 52178, tokOut: 19132, note: 'Retry with diagnostics corrected the test. Highest test count of any generation: 69 tests, all passing. Large input context from retry prompt.' },
+    { id: 7,  parent: 6, outcome: 'failed',   tests: 57,   total: 58,   tokIn: 21595, tokOut: 28379, note: 'Similar test-level mismatch. 1 failure, 57 passing. Retry prompt captured exact failure trace.' },
+    { id: 8,  parent: 7, outcome: 'promoted', tests: 68,   total: 68,   tokIn: 54005, tokOut: 17830, note: 'Corrected. 68 tests passing. 15 files generated.' },
+    { id: 9,  parent: 8, outcome: 'promoted', tests: 59,   total: 59,   tokIn: 25056, tokOut: 29290, note: 'Fresh generation from promoted Gen-8. 59 tests, all passing.' },
+    { id: 10, parent: 9, outcome: 'promoted', tests: 68,   total: 68,   tokIn: 25751, tokOut: 18644, note: 'Fifth and final promoted offspring. 68 tests, all passing. Generation loop complete: MAX_GENS=5 reached.' }
+  ];
+
+  var selected = 0;
+  var row = document.getElementById('genRow');
+
+  function fmtTokens(i, o) {
+    if (i === 0 && o === 0) { return '\u2014'; }
+    return (i / 1000).toFixed(0) + 'k in / ' + (o / 1000).toFixed(0) + 'k out';
+  }
+
+  function fmtTests(t, total) {
+    if (t === null) { return '\u2014'; }
+    return t + ' / ' + total + ' (' + Math.round(t / total * 100) + '%)';
+  }
+
+  function makeStat(label, value) {
+    var div = document.createElement('div');
+    var lbl = document.createElement('div');
+    lbl.className = 'gen-stat-label';
+    lbl.textContent = label;
+    var val = document.createElement('span');
+    val.className = 'gen-stat-value';
+    val.textContent = value;
+    div.appendChild(lbl);
+    div.appendChild(val);
+    return div;
+  }
+
+  var nodeEls = [];
+
+  function render() {
+    var g = gens[selected];
+
+    document.getElementById('detailTitle').textContent = 'Gen-' + g.id;
+
+    var badge = document.getElementById('detailBadge');
+    badge.className = 'gen-badge ' + g.outcome;
+    badge.textContent = g.outcome === 'promoted' ? '\u2713 promoted' : g.outcome === 'failed' ? '\u2717 failed' : 'seed';
+
+    var stats = document.getElementById('detailStats');
+    while (stats.firstChild) { stats.removeChild(stats.firstChild); }
+    stats.appendChild(makeStat('Tests', fmtTests(g.tests, g.total)));
+    stats.appendChild(makeStat('Parent', 'Gen-' + g.parent));
+    stats.appendChild(makeStat('Tokens', fmtTokens(g.tokIn, g.tokOut)));
+
+    document.getElementById('detailNote').textContent = g.note;
+
+    nodeEls.forEach(function(n, i) {
+      if (i === selected) {
+        n.classList.add('selected');
+      } else {
+        n.classList.remove('selected');
+      }
+    });
+  }
+
+  gens.forEach(function(g, i) {
+    var wrap = document.createElement('div');
+    wrap.className = 'gen-node-wrap';
+
+    var node = document.createElement('div');
+    node.className = 'gen-node ' + g.outcome;
+    node.textContent = g.id;
+    nodeEls.push(node);
+
+    var lbl = document.createElement('div');
+    lbl.className = 'gen-label';
+    lbl.textContent = g.outcome === 'seed' ? 'seed' : g.outcome === 'promoted' ? '\u2713' : '\u2717';
+
+    wrap.appendChild(node);
+    wrap.appendChild(lbl);
+
+    wrap.addEventListener('click', function() {
+      selected = i;
+      render();
+    });
+
+    row.appendChild(wrap);
+
+    if (i < gens.length - 1) {
+      var conn = document.createElement('div');
+      conn.className = 'gen-connector ' + (g.outcome === 'promoted' || g.outcome === 'seed' ? 'ok' : 'fail');
+      row.appendChild(conn);
+    }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

@@ -6,6 +6,8 @@ series: "Self-Improving Agents"
 series_part: 12
 prev: "CAMBRIAN: What If the Spec Is the Organism?"
 prev_url: 2026-03-18-cambrian.md
+next: "CAMBRIAN: It Reproduces"
+next_url: 2026-03-29-cambrian-reproduces.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-27-cambrian-first-loop.html
 ---
 
@@ -114,3 +116,5 @@ Phase 2 — economic viability, prediction markets, paying the bills — is stil
 ---
 
 *Previous: [CAMBRIAN: What If the Spec Is the Organism?](2026-03-18-cambrian.md)*
+
+*Next: [CAMBRIAN: It Reproduces](2026-03-29-cambrian-reproduces.md)*
