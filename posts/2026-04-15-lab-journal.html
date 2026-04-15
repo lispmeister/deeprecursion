@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lab Journal: Writing the Laboratory Notebook, for Agents &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-04-15-lab-journal.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong { color: #eeeef4; }
+
+  ul { padding-left: 1.25rem; }
+  ul li { margin-bottom: 0.4rem; }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a { color: var(--accent); }
+
+  /* Comparison widget */
+  .compare-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .compare-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .compare-toggle {
+    display: inline-flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px;
+    margin-bottom: 1.25rem;
+    gap: 2px;
+  }
+
+  .compare-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 0.5rem 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .compare-btn:hover { color: var(--text); }
+
+  .compare-btn.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .compare-stage {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.4rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.76rem;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow-x: auto;
+    min-height: 260px;
+    transition: opacity 0.2s;
+  }
+
+  .compare-stage .mono-dim { color: var(--text-dim); }
+  .compare-stage .mono-hl { color: var(--accent); }
+  .compare-stage .mono-good { color: var(--green); }
+  .compare-stage .mono-bad { color: var(--red); }
+  .compare-stage .mono-label { color: #d9b35a; font-weight: 600; }
+
+  .compare-meta {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+  }
+
+  .compare-meta .meta-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .compare-meta .meta-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+  }
+
+  .compare-meta .meta-value {
+    color: #eeeef4;
+    font-size: 0.7rem;
+  }
+
+  .compare-meta .meta-value.small { font-size: 0.66rem; }
+
+  .compare-caption {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .compare-caption strong { color: #eeeef4; font-style: normal; }
+
+  @media (prefers-color-scheme: light) {
+    strong, .compare-meta .meta-value { color: #2a2a32; }
+    .compare-caption strong { color: #2a2a32; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>The Lab Journal: Writing the Laboratory Notebook, for Agents</h1>
+  <p class="meta">Engineering Practice &middot; April 15, 2026</p>
+
+  <div class="abstract">Forty-six dated entries. Eleven days of compressed work. One self-reproducing code factory. The artifact that held it together wasn&rsquo;t the git history or the issue tracker &mdash; it was a plain-text lab journal, adapted from a 1985 chemistry textbook.</div>
+
+  <div class="see-also">
+    We&rsquo;ve extracted the setup into a standalone repo: <a href="https://github.com/lispmeister/lab-journal">github.com/lispmeister/lab-journal</a>. Drop it into any project, paste a block into <code>CLAUDE.md</code>, and your AI agent starts keeping a proper laboratory notebook.
+  </div>
+
+  <p>Here&rsquo;s why that matters more than it sounds.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Commit Messages Stop Scaling</div>
+
+  <p>Every developer knows the problem. You open a six-month-old commit. The message says <code>fix prime_runner bug</code>. You don&rsquo;t remember writing it. The diff is a one-line change. Why did that one line matter? What did you try first? Was there a test that caught it? Did you consider an alternative and reject it?</p>
+
+  <p>Git records <em>what changed</em>. It doesn&rsquo;t record <em>why you tried six things first</em>, <em>what hypothesis you were testing</em>, or <em>what the failure looked like before the fix</em>. For human-only work on a well-understood codebase, you can usually reconstruct the context from memory. For AI-assisted work on a novel system, you cannot.</p>
+
+  <p>Cambrian is a self-reproducing code generator with a 13k-token spec, an LLM-in-the-loop, a Docker-based test rig, and a supervisor managing generations. In eleven days, the project went from &ldquo;bootstrap spec&rdquo; to &ldquo;80% viable offspring, 305 tests passing, two M3 features scaffolded.&rdquo; No single human could hold that arc in their head, and the AI assistant doesn&rsquo;t persist across sessions. A commit log showed ~200 commits with messages like <code>fix streaming bug</code> and <code>add manifest validation</code>. That log was useless for understanding the project&rsquo;s state.</p>
+
+  <p>The lab journal was the thing that made the arc legible.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Kanare&rsquo;s Four Principles</div>
+
+  <p>The setup adapts Howard Kanare&rsquo;s <em>Writing the Laboratory Notebook</em> (American Chemical Society, 1985) &mdash; the standard reference for scientific record-keeping. Kanare&rsquo;s rules were written for chemists and biologists working in legal/IP contexts, but they transfer almost unchanged to software engineering with LLM agents.</p>
+
+  <div class="compare-box">
+    <div class="compare-title">Same incident &mdash; git log view vs. lab journal view (2026-04-03, prime_runner fix)</div>
+    <div class="compare-toggle" role="tablist">
+      <button class="compare-btn active" data-view="git">Commit message</button>
+      <button class="compare-btn" data-view="journal">Lab journal entry</button>
+    </div>
+    <div class="compare-stage" id="compareStage"></div>
+    <div class="compare-meta" id="compareMeta"></div>
+    <div class="compare-caption" id="compareCaption"></div>
+  </div>
+
+  <p><strong>Permanence.</strong> Entries are append-only. Never delete, never rewrite. If you were wrong, you add a dated correction referencing the original &mdash; you don&rsquo;t erase the record. This matters because being wrong is data. The Cambrian journal has entries where the diagnosis was wrong (see <code>journal-2026-04-03</code>: initial diagnosis blamed the LLM; Phase 3 of the same entry records the actual root cause in <code>prime_runner.py</code>). Both halves stay. The mistake is part of what we learned.</p>
+
+  <p><strong>Immediacy.</strong> Record as you work, not afterward from memory. Memory compresses, rationalizes, and smooths over the messy parts &mdash; the dead ends, the wrong hypotheses, the &ldquo;why did I think that would work&rdquo; moments. Those are exactly the parts future-you (or the agent in a new session) needs to see. An AI assistant doing a session has no memory to smooth anyway; writing as it works is the only recording that survives.</p>
+
+  <p><strong>Self-containment.</strong> Every entry stands alone. A reader unfamiliar with the project opens any single entry and can understand what was attempted, what happened, and what was concluded. This sounds pedantic until you watch an agent pick up a project after a context compaction &mdash; the journal is sometimes the only durable state between sessions.</p>
+
+  <p><strong>Completeness.</strong> Record what happened, not what you wish had happened. A failed experiment documented honestly saves every future session from repeating it. The six failed Cambrian generations that shared a Python 3.14 quoting bug (<code>journal-2026-03-27</code>) were only valuable in aggregate because each one was recorded as it failed.</p>
+
+  <p>One principle Kanare implies but doesn&rsquo;t name explicitly, we made explicit:</p>
+
+  <p><strong>Witnessing.</strong> Every entry is signed, dated (full ISO timestamp), and linked to verifiable artifacts &mdash; commit hashes, issue IDs, spec versions. The signature and commit hash bind the entry to the record. The entry can&rsquo;t claim something happened that the git log contradicts.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">How We Used It in Cambrian</div>
+
+  <p>A concrete example. On 2026-04-03, a campaign ran ten generations. Zero were viable. All ten failed at the manifest stage with the same error.</p>
+
+  <p>The commit log says: <code>fix: use module form in prime_runner manifest</code>. One line.</p>
+
+  <p>The journal entry (<code>journal-2026-04-03.md</code>) records:</p>
+
+  <ul>
+    <li>The run parameters, environment variables, and spec version used</li>
+    <li>The supervisor logs showing each generation&rsquo;s stage-by-stage failure</li>
+    <li>The initial diagnosis (LLM consistently generating wrong <code>entry.start</code> &mdash; wrong, it turned out)</li>
+    <li>The proposed fix (auto-normalize in test rig &mdash; also wrong)</li>
+    <li>Phase 3: the <em>actual</em> root cause (<code>supervisor/prime_runner.py:146</code> hardcoding the wrong command &mdash; the manifest is not LLM-generated at all)</li>
+    <li>The one-line fix with the before/after</li>
+    <li>A follow-up analysis finding 82% of &ldquo;LLM failures&rdquo; in this period were actually infrastructure bugs</li>
+    <li>Two new beads (<code>cambrian-jpoq</code>, <code>cambrian-xmtq</code>) for follow-up improvements</li>
+    <li>Signed, timestamped, linked to commit 3d22a0b</li>
+  </ul>
+
+  <p>Seventeen days later, when <a href="2026-04-15-cambrian-baldwin.html">Part 14 of this blog</a> was written, every claim in it traced back to a specific journal entry with specific evidence. I did not have to remember any of it. The journal did.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Hypothesis Table</div>
+
+  <p>The template has one structural element worth highlighting. Every entry that makes a testable change includes a small table:</p>
+
+  <table>
+    <thead>
+      <tr><th>Change</th><th>Hypothesis (before run)</th><th>Measurement (after run)</th><th>Evidence</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>structlog lint gate</td><td>+5&ndash;10 pp viability</td><td>8/10 viable; +12 pp vs baseline</td><td>report path</td></tr>
+    </tbody>
+  </table>
+
+  <p>The discipline is: fill in the hypothesis column <em>before</em> running the experiment. Record the measurement <em>after</em>. Link to the evidence.</p>
+
+  <p>This is the one place where software engineering typically diverges from laboratory science. We usually don&rsquo;t pre-register predictions. But for AI-assisted work, pre-registration is oddly valuable &mdash; it forces you (or the agent) to articulate what success would look like before the LLM starts generating code that tends to pattern-match on success language regardless of outcome. A predicted measurement of &ldquo;+5&ndash;10 pp&rdquo; followed by &ldquo;+12 pp&rdquo; is a real datum. &ldquo;It worked!&rdquo; is not.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Why This Matters More for AI Sessions</div>
+
+  <p>Three things are specific to AI-assisted engineering.</p>
+
+  <p><strong>Context compaction erases short-term memory.</strong> Long sessions with Claude or similar agents eventually compact prior conversation to stay under context limits. Anything not persisted outside the conversation is gone. The journal is the persistence layer. When <code>bd ready</code> shows the agent a list of open issues, and the journal shows the agent what was tried yesterday, session recovery takes seconds instead of rediscovery.</p>
+
+  <p><strong>The writer is the reader.</strong> In traditional lab work, the scientist writing the notebook is also the scientist who&rsquo;ll reread it next week. With AI agents, the writer is often a different instance than the reader &mdash; a fresh session, a new conversation, sometimes a different model. The journal format is the interface between them. Self-containment stops being a nicety and becomes the protocol.</p>
+
+  <p><strong>The append-only constraint prevents retroactive narrative cleanup.</strong> Agents are trained on text that presents conclusions as if they were inevitable. Left to write freely, an agent tends to narrate a session as a smooth march toward a working solution, eliding the false starts. Append-only means false starts stay visible. When the 2026-04-01 summary entry synthesized 21 prior sessions, the synthesis was honest because the substrate was honest.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What&rsquo;s in the Repo</div>
+
+  <p><code>lab-journal/TEMPLATE.md</code> &mdash; the per-session template, with goals, hypothesis table, and witness footer.</p>
+
+  <p><code>lab-journal/index.md</code> &mdash; the master index, one row per entry. Keeps the table of contents navigable years later.</p>
+
+  <p><code>CLAUDE.md</code> &mdash; the agent instructions. Paste into your project&rsquo;s <code>CLAUDE.md</code>. Covers: starting a session, working during a session, ending a session, the append-only rule, and how to update the index.</p>
+
+  <p>That&rsquo;s the whole tool. Three files and a convention. No daemon, no service, no dependency. It runs because the agent follows the rules in <code>CLAUDE.md</code>, and those rules are enforced by being plain text a human can audit.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">How to Adopt It</div>
+
+  <p>From the <a href="https://github.com/lispmeister/lab-journal">lab-journal repo</a>:</p>
+
+  <ol>
+    <li>Copy <code>lab-journal/TEMPLATE.md</code> and <code>lab-journal/index.md</code> into your project&rsquo;s <code>lab-journal/</code> directory.</li>
+    <li>Paste the agent-instructions block from the repo&rsquo;s README into your project&rsquo;s <code>CLAUDE.md</code>.</li>
+    <li>Commit.</li>
+  </ol>
+
+  <p>Next session, the agent will create a dated entry, log as it works, fill the hypothesis table before running experiments, sign off with the commit hash, and update the index. You get a durable engineering record that survives compaction, onboards fresh sessions, and captures the things commit messages can&rsquo;t.</p>
+
+  <p>The overhead is small &mdash; maybe two or three minutes per session for the footer and index update. The payback is any moment you need to know why something is the way it is, and the git log doesn&rsquo;t answer the question.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Honest Caveat</div>
+
+  <p>None of this is novel. Kanare wrote the book in 1985. Experimental scientists have kept bound, witnessed lab notebooks for centuries. The contribution here is a <em>translation</em>: taking practices built for paper notebooks in chemistry labs and rendering them as a markdown convention that AI coding agents will actually follow.</p>
+
+  <p>The reason it works is the same reason it worked for chemists: the discipline is minimal, the artifact is inspectable, and the cost of skipping an entry shows up later, predictably, as a forgotten decision.</p>
+
+  <p><strong>Write it down. Sign it. Don&rsquo;t rewrite it.</strong></p>
+
+</main>
+
+<footer class="site-footer">
+  <p>Deeprecursion &mdash; <a href="../index.html">Research</a> &middot; <a href="../about.html">About</a></p>
+</footer>
+
+<script>
+(function() {
+  var stage = document.getElementById('compareStage');
+  var meta = document.getElementById('compareMeta');
+  var caption = document.getElementById('compareCaption');
+  var btns = document.querySelectorAll('.compare-btn');
+
+  function el(tag, cls) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    return e;
+  }
+
+  function metaCell(label, value, small) {
+    var c = el('div', 'meta-cell');
+    var l = el('span', 'meta-label');
+    l.textContent = label;
+    var v = el('span', 'meta-value' + (small ? ' small' : ''));
+    v.textContent = value;
+    c.appendChild(l);
+    c.appendChild(v);
+    return c;
+  }
+
+  function buildGitView() {
+    while (stage.firstChild) { stage.removeChild(stage.firstChild); }
+
+    var lines = [
+      { cls: 'mono-dim', text: 'commit 3d22a0b (HEAD -> master)' },
+      { cls: 'mono-dim', text: 'Author:  lispmeister' },
+      { cls: 'mono-dim', text: 'Date:    2026-04-03 08:30:00 +0400' },
+      { text: '' },
+      { text: '    fix: use module form in prime_runner manifest' },
+      { text: '' },
+      { cls: 'mono-dim', text: ' supervisor/prime_runner.py | 2 +-' },
+      { cls: 'mono-dim', text: ' 1 file changed, 1 insertion(+), 1 deletion(-)' },
+      { text: '' },
+      { cls: 'mono-bad', text: '-    "start": "python src/prime.py",' },
+      { cls: 'mono-good', text: '+    "start": "python -m src.prime",' }
+    ];
+
+    lines.forEach(function(l) {
+      var span = el('span', l.cls);
+      span.textContent = l.text;
+      stage.appendChild(span);
+      stage.appendChild(document.createTextNode('\n'));
+    });
+
+    while (meta.firstChild) { meta.removeChild(meta.firstChild); }
+    meta.appendChild(metaCell('Lines of context', '11', true));
+    meta.appendChild(metaCell('Hypothesis', '(none recorded)', true));
+    meta.appendChild(metaCell('Failed attempts', '(none recorded)', true));
+    meta.appendChild(metaCell('Why this matters', '(unknown)', true));
+
+    while (caption.firstChild) { caption.removeChild(caption.firstChild); }
+    var cap = el('strong');
+    cap.textContent = 'The git log view. ';
+    caption.appendChild(cap);
+    caption.appendChild(document.createTextNode(
+      'Tells you what the diff was. Does not tell you that ten consecutive generations failed first, that the initial diagnosis was wrong, that the proposed fix (auto-normalize in test rig) was also wrong, or that this led to the discovery that 82% of "LLM failures" in that period were actually infrastructure bugs.'
+    ));
+  }
+
+  function buildJournalView() {
+    while (stage.firstChild) { stage.removeChild(stage.firstChild); }
+
+    var lines = [
+      { cls: 'mono-label', text: '# journal-2026-04-03.md — Campaign Run Gens 20–29' },
+      { text: '' },
+      { cls: 'mono-hl', text: '## Session Goals' },
+      { text: '1) Run 10 generations against CAMBRIAN-SPEC-005 v0.14.3' },
+      { text: '2) Validate three post-campaign fixes from 2026-04-02' },
+      { text: '3) Record viability rate and identify what to fix next' },
+      { text: '' },
+      { cls: 'mono-hl', text: '## Phase 2: Campaign Run — gens 20–29' },
+      { cls: 'mono-bad', text: 'Viability: 0/10. All ten failed at manifest stage.' },
+      { text: 'Every gen: "python src/prime.py" rejected by validation gate.' },
+      { text: '' },
+      { cls: 'mono-hl', text: '## Critical Finding: spec guidance is NOT effective' },
+      { text: 'The LLM has a strong prior for "python src/prime.py" that' },
+      { text: 'overrides the spec. Proposed fix: auto-normalize in test rig.' },
+      { text: 'Bead: cambrian-hyuy (P0).' },
+      { text: '' },
+      { cls: 'mono-hl', text: '## Phase 3: Root Cause Correction' },
+      { cls: 'mono-bad', text: 'Post-run analysis: the journal\u2019s diagnosis was WRONG.' },
+      { text: 'Actual root cause: supervisor/prime_runner.py:146 hardcodes' },
+      { cls: 'mono-bad', text: '    "start": "python src/prime.py"' },
+      { text: 'The manifest is NOT LLM-generated. Built programmatically' },
+      { text: 'by the Supervisor. Spec guidance was never relevant.' },
+      { text: '' },
+      { cls: 'mono-hl', text: '## Phase 4: Viability Improvements' },
+      { text: 'Analysis of all 29 gens: infra bugs caused 81.8% of failures.' },
+      { text: 'LLM-adjusted viability: ~58%.' },
+      { text: 'New beads: cambrian-jpoq (enrich system prompt),' },
+      { text: '           cambrian-xmtq (feed diagnostics to next gen).' },
+      { text: '' },
+      { cls: 'mono-hl', text: '## Hypothesis vs Measured Impact' },
+      { cls: 'mono-dim', text: '| prime_runner fix | +40–60 pp viability | TBD next campaign |' },
+      { text: '' },
+      { cls: 'mono-dim', text: 'Signed: lispmeister + AI assistant' },
+      { cls: 'mono-dim', text: 'Commit: 636e598, 3d22a0b, 5fb0451' },
+      { cls: 'mono-dim', text: 'Specs:  CAMBRIAN-SPEC-005 v0.14.3' }
+    ];
+
+    lines.forEach(function(l) {
+      var span = el('span', l.cls);
+      span.textContent = l.text;
+      stage.appendChild(span);
+      stage.appendChild(document.createTextNode('\n'));
+    });
+
+    while (meta.firstChild) { meta.removeChild(meta.firstChild); }
+    meta.appendChild(metaCell('Lines of context', '~170', true));
+    meta.appendChild(metaCell('Hypothesis', 'recorded, pre-run', true));
+    meta.appendChild(metaCell('Failed attempts', '2 wrong diagnoses', true));
+    meta.appendChild(metaCell('Why this matters', '82% infra-bug finding', true));
+
+    while (caption.firstChild) { caption.removeChild(caption.firstChild); }
+    var cap = el('strong');
+    cap.textContent = 'The lab journal view. ';
+    caption.appendChild(cap);
+    caption.appendChild(document.createTextNode(
+      'Captures both wrong diagnoses (the spec-guidance theory, the auto-normalize proposal), the correction, and the follow-up analysis. Append-only: the wrong diagnoses stay in the record. Seventeen days later, writing a blog post, every claim traced back to a specific section here.'
+    ));
+  }
+
+  function select(view) {
+    btns.forEach(function(b) {
+      if (b.dataset.view === view) { b.classList.add('active'); }
+      else { b.classList.remove('active'); }
+    });
+    if (view === 'git') { buildGitView(); } else { buildJournalView(); }
+  }
+
+  btns.forEach(function(b) {
+    b.addEventListener('click', function() { select(b.dataset.view); });
+  });
+
+  select('git');
+})();
+</script>
+
+</body>
+</html>
