@@ -6,6 +6,8 @@ series: "Self-Improving Agents"
 series_part: 13
 prev: "CAMBRIAN: The Loop Closes"
 prev_url: 2026-03-27-cambrian-first-loop.md
+next: "CAMBRIAN: The Baldwin Effect"
+next_url: 2026-04-15-cambrian-baldwin.md
 url: https://lispmeister.github.io/deeprecursion/posts/2026-03-29-cambrian-reproduces.html
 ---
 
@@ -84,5 +86,7 @@ The research work is done: we studied A-Evolve (Amazon's agent evolution framewo
 The honest caveat: reproduction is a solved problem. Evolution is harder. Selection pressure can optimize for the wrong things. Fitness functions can be gamed. Self-referential fitness — where the organism evolves to game its own fitness measure — is a real risk, not a theoretical one. The next post will have more to say about that when the first M2 campaign runs.
 
 ---
+
+*Continue reading: [CAMBRIAN: The Baldwin Effect](2026-04-15-cambrian-baldwin.md)*
 
 *Previous: [CAMBRIAN: The Loop Closes](2026-03-27-cambrian-first-loop.md)*

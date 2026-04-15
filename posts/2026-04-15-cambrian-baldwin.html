@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAMBRIAN: The Baldwin Effect &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-04-15-cambrian-baldwin.md">
+<style>
+  .section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong { color: #eeeef4; }
+
+  ul { padding-left: 1.25rem; }
+  ul li { margin-bottom: 0.4rem; }
+
+  .see-also {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .see-also a { color: var(--accent); }
+
+  .highlight-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  .stat-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 0.75rem;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #eeeef4;
+  }
+
+  .pheno-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .pheno-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 1.25rem;
+  }
+
+  .pheno-matrix {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .pheno-grid {
+    display: grid;
+    grid-template-columns: 170px repeat(8, minmax(46px, 1fr));
+    gap: 2px;
+    min-width: 540px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .pheno-head-gen {
+    text-align: center;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    padding: 0.5rem 0.25rem;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s;
+    background: var(--bg);
+  }
+
+  .pheno-head-gen:hover { color: var(--accent); }
+  .pheno-head-gen.selected-gen {
+    background: var(--accent-glow);
+    color: var(--accent);
+  }
+
+  .pheno-head-gen .rank {
+    display: block;
+    font-size: 0.52rem;
+    opacity: 0.6;
+    margin-top: 2px;
+  }
+
+  .pheno-head-corner {
+    padding: 0.5rem;
+  }
+
+  .pheno-row-label {
+    font-size: 0.68rem;
+    color: var(--text);
+    padding: 0.55rem 0.6rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  .pheno-row-label:hover { color: var(--accent); }
+  .pheno-row-label.selected-pat {
+    background: var(--accent-glow);
+    color: var(--accent);
+  }
+
+  .pheno-row-label .pat-kind {
+    font-size: 0.54rem;
+    color: var(--text-dim);
+    margin-left: 0.4rem;
+    opacity: 0.7;
+  }
+
+  .pheno-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    padding: 0.5rem 0;
+    background: var(--bg);
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+
+  .pheno-cell.yes {
+    color: var(--green);
+    background: rgba(90, 224, 160, 0.05);
+  }
+
+  .pheno-cell.no {
+    color: rgba(224, 90, 111, 0.55);
+    background: rgba(224, 90, 111, 0.03);
+  }
+
+  .pheno-cell.partial {
+    color: #d9b35a;
+    background: rgba(217, 179, 90, 0.05);
+  }
+
+  .pheno-cell.highlight-good {
+    background: rgba(90, 224, 160, 0.22);
+    box-shadow: 0 0 0 1px var(--green);
+  }
+
+  .pheno-cell.highlight-bad {
+    background: rgba(224, 90, 111, 0.22);
+    box-shadow: 0 0 0 1px var(--red);
+  }
+
+  .pheno-cell.dim {
+    opacity: 0.22;
+  }
+
+  .pheno-readout {
+    margin-top: 1.25rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    min-height: 78px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--text-dim);
+  }
+
+  .pheno-readout strong { color: #eeeef4; }
+  .pheno-readout .mono { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; }
+
+  .pheno-hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 0.75rem;
+  }
+
+  .pheno-legend {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 0.75rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+  }
+
+  .pheno-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .pheno-legend-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 600px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .pheno-grid { grid-template-columns: 130px repeat(8, minmax(38px, 1fr)); }
+    .pheno-row-label { font-size: 0.62rem; }
+  }
+
+  @media (prefers-color-scheme: light) {
+    strong, .stat-value { color: #2a2a32; }
+    .pheno-readout strong { color: #2a2a32; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>CAMBRIAN: The Baldwin Effect</h1>
+  <p class="meta">Agent Architecture &middot; April 15, 2026</p>
+
+  <div class="see-also">
+    Part 14 of a series. Previous: <a href="2026-03-29-cambrian-reproduces.html">CAMBRIAN: It Reproduces</a>
+  </div>
+
+  <div class="abstract">Part 13 ended with five promoted offspring and an open question: would evolution optimize for the wrong things? Seventeen days later, the answer is more interesting than yes or no. Selection found real quality differences between viable organisms &mdash; and the distiller that reads them is now automated.</div>
+
+  <hr class="divider">
+
+  <div class="section-header">The Journey to 80%</div>
+
+  <p>M1 hit 50% first-try viability on a 10-generation run. We expected M2 to do better. It did not.</p>
+
+  <p>Gens 11&ndash;16 (six attempts) returned just one viable organism. Gens 17&ndash;19: zero. Gens 20&ndash;29: zero. Ten consecutive failures at the manifest stage with the same error: <code>python src/prime.py</code> rejected by the new validation gate.</p>
+
+  <p>The validation gate was working. The gate was catching the Supervisor.</p>
+
+  <p><strong><code>supervisor/prime_runner.py</code> line 146 hardcoded <code>"start": "python src/prime.py"</code>.</strong> The manifest isn&rsquo;t LLM-generated &mdash; the Supervisor builds it programmatically. Every generation since gen-16 had been failing because trusted infrastructure, not the organism, was ignoring the spec. We&rsquo;d patched the spec three times (v0.14.1 &rarr; v0.14.2 &rarr; v0.14.3) and enriched the system prompt, believing the LLM was the problem. A one-line fix to a file that never read those spec updates unblocked the entire pipeline.</p>
+
+  <div class="highlight-box">
+    <p style="margin: 0; font-size: 0.88rem; line-height: 1.6;">The lesson isn&rsquo;t &ldquo;check the Supervisor too.&rdquo; It&rsquo;s more specific than that: <strong>when a failure repeats across N independent LLM samples, the bug is almost never in the LLM.</strong> Sampling noise doesn&rsquo;t look like N-for-N. It looks like 3-of-10. Ten-of-ten is a deterministic bug in the code path the samples all flow through.</p>
+  </div>
+
+  <p>With the prime_runner bug fixed and the system prompt enriched with concrete anti-pattern examples, the next 10-generation campaign (gens 39&ndash;48) returned 8 viable organisms.</p>
+
+  <div class="stat-row">
+    <div class="stat-cell">
+      <div class="stat-label">M1 run</div>
+      <div class="stat-value">50%</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Pre-fix era</div>
+      <div class="stat-value">4%</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Confidence runs</div>
+      <div class="stat-value">55%</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Best campaign</div>
+      <div class="stat-value">80%</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-header">All Eight Passed. They Weren&rsquo;t Equal.</div>
+
+  <p>Eight organisms passed the same test rig, the same fitness vector, the same viability gate. Side-by-side, they weren&rsquo;t interchangeable. A differential code audit across the eight viable gens from the 39&ndash;48 campaign found four patterns that cleanly separated top-ranked from bottom-ranked.</p>
+
+  <div class="pheno-box">
+    <div class="pheno-title">Differential phenotype viewer &mdash; gens 39 / 42&ndash;48, 39&ndash;48 campaign</div>
+    <div class="pheno-matrix">
+      <div class="pheno-grid" id="phenoGrid"></div>
+    </div>
+    <div class="pheno-legend">
+      <div class="pheno-legend-item"><span class="pheno-legend-dot" style="background: rgba(90,224,160,0.35)"></span> pattern present</div>
+      <div class="pheno-legend-item"><span class="pheno-legend-dot" style="background: rgba(217,179,90,0.35)"></span> partial</div>
+      <div class="pheno-legend-item"><span class="pheno-legend-dot" style="background: rgba(224,90,111,0.35)"></span> absent / anti-pattern</div>
+    </div>
+    <div class="pheno-hint">Click a pattern or a generation to inspect</div>
+    <div class="pheno-readout" id="phenoReadout"></div>
+  </div>
+
+  <p>The top-ranked organism (Gen-42) had three of four. The bottom-ranked (Gen-47) had zero and an anti-pattern. All eight passed. Fitness found the ordering anyway.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">The Baldwin Effect, Automated</div>
+
+  <p>In biology, the Baldwin Effect describes phenotypic traits &mdash; things organisms learn within a lifetime &mdash; eventually becoming genetic. A skill acquired through experience becomes an instinct a generation later.</p>
+
+  <p>The same pattern is operational here. The spec is the genome; the generated code is the phenotype. When differential analysis finds that the best-ranked phenotypes share a pattern not required by the spec, that pattern is a candidate genomic upgrade. Two such patterns (monotonic time, exponential backoff with a concrete code example) were hand-encoded into CAMBRIAN-SPEC-005 v0.14.4 after the 39&ndash;48 campaign. The next campaign should produce more 8-of-8 quality outputs, because the &ldquo;learned&rdquo; behavior is now in the spec every generation reads.</p>
+
+  <p>Hand-encoding is the part that didn&rsquo;t want to stay hand-encoded. <code>scripts/distill_campaign.py</code> is an AST-based post-campaign analyzer: parse every Python file in every viable gen, walk the trees for known patterns (positive and negative), rank gens by a composite fitness score, and emit proposed spec amendments with code examples lifted from the best gens. Validated against the 39&ndash;48 campaign, it independently rediscovered all four patterns the manual audit had found, with the top-vs-bottom ranking signal noticeably cleaner than the viable-vs-failed signal.</p>
+
+  <p>The loop is closed: phenotype teaches genome, mechanically. The next step &mdash; feeding the distiller&rsquo;s proposals directly into <code>spec_mutator.py</code> as informed mutations &mdash; replaces random perturbation with targeted improvement in the BO loop.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What This Costs</div>
+
+  <p>The 39&ndash;48 campaign ran on claude-sonnet-4-6 throughout. A focused comparison on a single generation showed Opus at roughly 5&times; the cost per attempt with no clear quality advantage for spec compliance &mdash; Opus gen-35 required a parse repair before succeeding; Sonnet gen-32 did not. The economic default is Sonnet with Opus reserved for explicit escalation.</p>
+
+  <div class="stat-row">
+    <div class="stat-cell">
+      <div class="stat-label">Sonnet / gen (fresh)</div>
+      <div class="stat-value">~$0.43</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Sonnet / gen (feedback)</div>
+      <div class="stat-value">~$0.47</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Opus / gen</div>
+      <div class="stat-value">~$3.83</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">10-gen campaign</div>
+      <div class="stat-value">~$4.70</div>
+    </div>
+  </div>
+
+  <p>A feedback-enabled campaign adds about 1k input tokens per generation cumulatively, because the prior failure&rsquo;s diagnostics and source are threaded into the next prompt. That&rsquo;s the cost of Lamarckian retry: ~4% more input for the full failure context.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">Adversarial Review, Two Rounds</div>
+
+  <p>Evolution rewards whatever passes the gate. If the gate is weak, the organism learns to pass the gate.</p>
+
+  <p>Two rounds of adversarial review tightened the trust boundary in April. Round one stripped the Anthropic API key from the Test Rig (the Rig should never need it &mdash; only the Supervisor does), set <code>NetworkMode=none</code> on Test Rig containers so no organism can phone home, and removed dead code paths (<code>screen_mutation()</code>) that weren&rsquo;t wired into the promotion pipeline. Round two added reverse-run workspace isolation, sandbox controls (<code>no-new-privileges</code>, Linux capability drops), BO resume deduplication, and append-only semantics on campaign records. The specs bumped from v0.14.4 / v0.9.1 to v0.18.0 / v0.14.0 in a week.</p>
+
+  <p>The more interesting hardening is on the evaluation side. The Test Rig now captures <code>container.log</code> before rollback on every path &mdash; normal exit, timeout, process group kill &mdash; so failure diagnostics persist even when the container is gone. A regression-guard mechanism (M3 scaffolding) runs old baseline artifacts against the current Test Rig whenever a new generation is promoted, producing a 2&times;2 matrix of &ldquo;new artifact vs old contracts&rdquo; and &ldquo;old artifact vs new tests.&rdquo; If an organism passes the current gate but would fail against the battery of contracts established by its ancestors, that&rsquo;s visible in a separate fitness dimension rather than hidden behind a binary viable/not-viable.</p>
+
+  <p>Binary viability is a weak gate. Binary viability against every historical contract is a much harder one to game.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What We Actually Learned</div>
+
+  <p>Three things became clear between Part 13 and this one.</p>
+
+  <p><strong>Most &ldquo;LLM failures&rdquo; are infrastructure failures.</strong> Of 29 early M2 generation attempts, 82% failed for reasons that had nothing to do with the organism&rsquo;s code. Stale Docker images, wrong <code>/venv</code> ownership, a hardcoded command in the Supervisor, a manifest field built by trusted code. Each looks like the LLM generating bad output. Each was actually our own bug in a layer the LLM never saw. Ten failures in a row are a deterministic bug. Always.</p>
+
+  <p><strong>Fitness ordering works before fitness pressure does.</strong> We haven&rsquo;t run a selection campaign &mdash; none of the gens 39&ndash;48 were chosen over each other yet. But we can already see which ones would win. The differential phenotypic patterns are visible in a single campaign&rsquo;s worth of viable organisms. Selection pressure is just the mechanism that compounds what&rsquo;s already measurable.</p>
+
+  <p><strong>Spec precision is the rate-limiting step.</strong> Every quality jump in the project has traced back to a spec patch, not a code patch. The streaming requirement, the aiohttp test pattern, the module-form entry command, the <code>time.monotonic()</code> rule, the backoff example. The LLM is a very literal compiler of the spec into code. Ambiguity in the spec becomes ambiguity in the code. The distiller automates the discovery of what the spec was missing.</p>
+
+  <hr class="divider">
+
+  <div class="section-header">What Comes Next</div>
+
+  <p>The infrastructure for M2 Stage 1 is built, tested (305 tests passing), and rubric-backed (<code>summarize_m2_results.py</code> reports baseline-vs-mutation deltas against a checklist). What&rsquo;s outstanding is an actual spec-mutation campaign where the BO loop proposes spec changes, the mini-campaigns evaluate them, and the distiller-informed mutator feeds phenotypic wins back as targeted spec amendments rather than random perturbations.</p>
+
+  <p>Beyond that, M3&rsquo;s counterfactual baseline battery &mdash; already scaffolded &mdash; will run every promoted generation against a growing library of contracts extracted from every prior generation. A fitter organism will be one that satisfies not just the current spec but the intersection of every spec its lineage has passed. That&rsquo;s a much harder surface to game than a single-campaign fitness vector.</p>
+
+  <p>The honest status: reproduction works reliably. Ordered fitness across viable organisms is measurable and automatable. Selection pressure itself &mdash; actually choosing between spec variants and letting the winners propagate &mdash; is the next thing to run and the next thing that can surprise us.</p>
+
+  <hr class="divider">
+
+  <p><em>Previous: <a href="2026-03-29-cambrian-reproduces.html">CAMBRIAN: It Reproduces</a></em></p>
+
+</main>
+
+<footer class="site-footer">
+  <p>Deeprecursion &mdash; <a href="../index.html">Research</a> &middot; <a href="../about.html">About</a></p>
+</footer>
+
+<script>
+(function() {
+  var gens = [
+    { id: 42, rank: 1, note: 'Specific exceptions, exponential backoff, cleanest Supervisor client. Top-ranked.' },
+    { id: 45, rank: 2, note: 'time.monotonic() for uptime. Correct structlog. Tied-second.' },
+    { id: 46, rank: 2, note: 'time.monotonic() for uptime. Partial specific exceptions. Tied-second.' },
+    { id: 39, rank: 3, note: 'Idiomatic baseline. No structural anti-patterns but no standout features.' },
+    { id: 44, rank: 3, note: 'Clean baseline. No standout features.' },
+    { id: 48, rank: 3, note: 'Clean baseline. No standout features.' },
+    { id: 43, rank: 4, note: 'Structlog misuse: event="anthropic_key_missing" kwarg duplicates the positional event name.' },
+    { id: 47, rank: 4, note: 'Structlog misuse: non-standard event_msg= kwarg. Bottom-ranked.' }
+  ];
+
+  var patterns = [
+    { name: 'time.monotonic()',     kind: 'good', vals: [0, 1, 1, 0, 0, 0, 0, 0],
+      explain: 'System clocks can jump backward on NTP adjustments. time.monotonic() is the correct API for uptime. Only 2 of 8 got this right.' },
+    { name: 'Exponential backoff',  kind: 'good', vals: [1, 0, 0, 0, 0, 0, 0, 0],
+      explain: 'Only Gen-42 implements exponential backoff (backoff *= 2, capped at 60s) in the Supervisor client. The others use fixed delays or no retry.' },
+    { name: 'Specific exceptions',  kind: 'good', vals: [1, 0, 0.5, 0, 0, 0.5, 0, 0],
+      explain: 'Gen-42 catches aiohttp.ClientError specifically. Gens 43 and 46 catch FileNotFoundError for the spec. Most catch bare Exception.' },
+    { name: 'Structlog correct',    kind: 'good', vals: [1, 1, 1, 1, 1, 1, 0, 0],
+      explain: 'Gens 43 and 47 pass event= as a kwarg, duplicating the positional event name or using non-standard event_msg=. Both are anti-patterns the distiller flags.' },
+    { name: 'time.time() (anti)',   kind: 'bad',  vals: [0, 0, 0, 1, 1, 1, 1, 1],
+      explain: 'The anti-pattern. 6 of 8 gens use time.time() for uptime. This is what the spec now forbids in v0.14.4.' }
+  ];
+
+  var grid = document.getElementById('phenoGrid');
+  var readout = document.getElementById('phenoReadout');
+
+  var selectedPat = null;
+  var selectedGen = null;
+
+  function el(tag, cls) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    return e;
+  }
+
+  function buildGrid() {
+    while (grid.firstChild) { grid.removeChild(grid.firstChild); }
+
+    grid.appendChild(el('div', 'pheno-head-corner'));
+
+    gens.forEach(function(g, i) {
+      var h = el('div', 'pheno-head-gen');
+      h.dataset.gen = i;
+      h.appendChild(document.createTextNode('Gen-' + g.id));
+      var r = el('span', 'rank');
+      r.textContent = '#' + g.rank;
+      h.appendChild(r);
+      h.addEventListener('click', function() {
+        selectedGen = (selectedGen === i) ? null : i;
+        selectedPat = null;
+        render();
+      });
+      grid.appendChild(h);
+    });
+
+    patterns.forEach(function(p, pi) {
+      var lbl = el('div', 'pheno-row-label');
+      lbl.dataset.pat = pi;
+      lbl.appendChild(document.createTextNode(p.name));
+      var kind = el('span', 'pat-kind');
+      kind.textContent = p.kind === 'good' ? '\u2191 quality' : '\u2193 anti';
+      lbl.appendChild(kind);
+      lbl.addEventListener('click', function() {
+        selectedPat = (selectedPat === pi) ? null : pi;
+        selectedGen = null;
+        render();
+      });
+      grid.appendChild(lbl);
+
+      p.vals.forEach(function(v, gi) {
+        var cell = el('div', 'pheno-cell');
+        cell.dataset.pat = pi;
+        cell.dataset.gen = gi;
+        if (v === 1) { cell.classList.add('yes'); cell.textContent = '\u2713'; }
+        else if (v === 0.5) { cell.classList.add('partial'); cell.textContent = '~'; }
+        else { cell.classList.add('no'); cell.textContent = '\u2717'; }
+        grid.appendChild(cell);
+      });
+    });
+  }
+
+  function setReadout(kind, title, body) {
+    while (readout.firstChild) { readout.removeChild(readout.firstChild); }
+    if (!title && !body) {
+      readout.appendChild(document.createTextNode(kind));
+      return;
+    }
+    var strong = el('strong', kind === 'gen' ? 'mono' : null);
+    strong.textContent = title;
+    readout.appendChild(strong);
+    readout.appendChild(document.createTextNode(' \u2014 '));
+    readout.appendChild(document.createTextNode(body));
+  }
+
+  function render() {
+    Array.prototype.forEach.call(grid.querySelectorAll('.pheno-cell'), function(c) {
+      c.classList.remove('highlight-good', 'highlight-bad', 'dim');
+    });
+    Array.prototype.forEach.call(grid.querySelectorAll('.pheno-head-gen'), function(h) {
+      h.classList.remove('selected-gen');
+    });
+    Array.prototype.forEach.call(grid.querySelectorAll('.pheno-row-label'), function(l) {
+      l.classList.remove('selected-pat');
+    });
+
+    if (selectedPat !== null) {
+      var p = patterns[selectedPat];
+      grid.querySelector('.pheno-row-label[data-pat="' + selectedPat + '"]').classList.add('selected-pat');
+
+      Array.prototype.forEach.call(grid.querySelectorAll('.pheno-cell[data-pat="' + selectedPat + '"]'), function(c) {
+        var gi = +c.dataset.gen;
+        var v = p.vals[gi];
+        if (v === 1 || v === 0.5) {
+          c.classList.add(p.kind === 'good' ? 'highlight-good' : 'highlight-bad');
+        }
+      });
+      Array.prototype.forEach.call(grid.querySelectorAll('.pheno-cell'), function(c) {
+        if (+c.dataset.pat !== selectedPat) { c.classList.add('dim'); }
+      });
+
+      var count = p.vals.filter(function(x){return x === 1;}).length;
+      var partial = p.vals.filter(function(x){return x === 0.5;}).length;
+      var summary = count + ' of 8';
+      if (partial) { summary += ' (+' + partial + ' partial)'; }
+      setReadout('pat', p.name, summary + '. ' + p.explain);
+    } else if (selectedGen !== null) {
+      var g = gens[selectedGen];
+      grid.querySelector('.pheno-head-gen[data-gen="' + selectedGen + '"]').classList.add('selected-gen');
+
+      Array.prototype.forEach.call(grid.querySelectorAll('.pheno-cell[data-gen="' + selectedGen + '"]'), function(c) {
+        var pi = +c.dataset.pat;
+        var v = patterns[pi].vals[selectedGen];
+        if (v === 1 || v === 0.5) {
+          c.classList.add(patterns[pi].kind === 'good' ? 'highlight-good' : 'highlight-bad');
+        }
+      });
+      Array.prototype.forEach.call(grid.querySelectorAll('.pheno-cell'), function(c) {
+        if (+c.dataset.gen !== selectedGen) { c.classList.add('dim'); }
+      });
+
+      var rankLabel = ['top', '2nd', '3rd', 'bottom'][g.rank - 1] || ('#' + g.rank);
+      setReadout('gen', 'Gen-' + g.id, 'fitness rank ' + rankLabel + '. ' + g.note);
+    } else {
+      setReadout('All 8 organisms passed the viability gate. The differential patterns above are what separate top-ranked from bottom-ranked \u2014 none of these differences block promotion today, but the distiller proposes them as spec amendments so the next generation inherits the wins.');
+    }
+  }
+
+  buildGrid();
+  render();
+})();
+</script>
+
+</body>
+</html>
