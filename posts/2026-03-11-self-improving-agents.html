@@ -34,7 +34,7 @@
   }
 
   strong {
-    color: #eeeef4;
+    color: var(--text);
   }
 
   ul {
@@ -135,14 +135,14 @@
 
   .loop-stage.active {
     background: var(--accent);
-    color: #000;
+    color: var(--text);
     border-color: var(--accent);
     font-weight: 700;
   }
 
   .loop-stage.done {
-    border-color: #4a9;
-    color: #4a9;
+    border-color: var(--green);
+    color: var(--green);
   }
 
   .loop-detail {
@@ -186,12 +186,12 @@
   }
 
   .loop-log-entry .keep {
-    color: #4a9;
+    color: var(--green);
     font-weight: 600;
   }
 
   .loop-log-entry .revert {
-    color: #c66;
+    color: var(--red);
     font-weight: 600;
   }
 
@@ -220,7 +220,7 @@
 
   .loop-btn.primary {
     background: var(--accent);
-    color: #000;
+    color: var(--text);
     border-color: var(--accent);
     font-weight: 600;
   }
@@ -237,7 +237,7 @@
   }
 
   .loop-score .improved {
-    color: #4a9;
+    color: var(--green);
   }
 
   .loop-iter {
@@ -260,12 +260,12 @@
   }
 
   .sep-box.fixed {
-    border-color: #c66;
+    border-color: var(--red);
     border-style: dashed;
   }
 
   .sep-box.mutable {
-    border-color: #4a9;
+    border-color: var(--green);
   }
 
   .sep-box .sep-label {
@@ -276,11 +276,11 @@
   }
 
   .sep-box.fixed .sep-label {
-    color: #c66;
+    color: var(--red);
   }
 
   .sep-box.mutable .sep-label {
-    color: #4a9;
+    color: var(--green);
   }
 
   .sep-box .sep-name {
@@ -296,7 +296,6 @@
 </style>
 </head>
 <body>
-<div class="grain"></div>
 
 <header class="site-header">
   <a href="../index.html" class="site-title">Deeprecursion</a>
@@ -584,14 +583,14 @@
         break;
       case 2:
         var evalScore = score + exp.delta;
-        detailText.innerHTML = label + "Running evaluation suite (external, immutable)...<br>Current score: <strong>" + score.toFixed(3) + "</strong> &rarr; New score: <strong>" + evalScore.toFixed(3) + "</strong><br><br>" + (exp.delta < 0 ? '<span style="color:#4a9">Score improved by ' + Math.abs(exp.delta).toFixed(3) + "</span>" : '<span style="color:#c66">Score degraded by ' + exp.delta.toFixed(3) + "</span>");
+        detailText.innerHTML = label + "Running evaluation suite (external, immutable)...<br>Current score: <strong>" + score.toFixed(3) + "</strong> &rarr; New score: <strong>" + evalScore.toFixed(3) + "</strong><br><br>" + (exp.delta < 0 ? '<span style="color:var(--green)">Score improved by ' + Math.abs(exp.delta).toFixed(3) + "</span>" : '<span style="color:var(--red)">Score degraded by ' + exp.delta.toFixed(3) + "</span>");
         break;
       case 3:
         if (exp.kept) {
           score += exp.delta;
-          detailText.innerHTML = label + '<span style="color:#4a9"><strong>KEEP.</strong></span> Metric improved. Modification is retained.<br>New baseline: <strong>' + score.toFixed(3) + "</strong>";
+          detailText.innerHTML = label + '<span style="color:var(--green)"><strong>KEEP.</strong></span> Metric improved. Modification is retained.<br>New baseline: <strong>' + score.toFixed(3) + "</strong>";
         } else {
-          detailText.innerHTML = label + '<span style="color:#c66"><strong>REVERT.</strong></span> Metric did not improve. Rolling back to previous version.<br>Baseline unchanged: <strong>' + score.toFixed(3) + "</strong>";
+          detailText.innerHTML = label + '<span style="color:var(--red)"><strong>REVERT.</strong></span> Metric did not improve. Rolling back to previous version.<br>Baseline unchanged: <strong>' + score.toFixed(3) + "</strong>";
         }
         updateScore();
         break;

@@ -34,7 +34,7 @@
   }
 
   strong {
-    color: #eeeef4;
+    color: var(--text);
   }
 
   ul {
@@ -157,7 +157,7 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 1.5rem;
     font-weight: 600;
-    color: #eeeef4;
+    color: var(--text);
   }
 
   .stat-label {
@@ -250,7 +250,7 @@
   .run-model {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.78rem;
-    color: #eeeef4;
+    color: var(--text);
   }
 
   .run-promoted-zero {
@@ -299,7 +299,7 @@
 
   .bug-title {
     font-weight: 600;
-    color: #eeeef4;
+    color: var(--text);
     font-size: 0.95rem;
     margin-bottom: 0.5rem;
   }
@@ -329,7 +329,7 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #eeeef4;
+    color: var(--text);
     margin-bottom: 0.25rem;
   }
 
@@ -464,7 +464,7 @@
   }
 
   .calc-value {
-    color: #eeeef4;
+    color: var(--text);
     font-weight: 600;
   }
 
@@ -540,24 +540,23 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #eeeef4;
+    color: var(--text);
   }
 
   @media (prefers-color-scheme: light) {
     strong {
-      color: #2a2a32;
+      color: var(--text);
     }
     .bug-title, .model-name, .run-model, .hero-gen {
-      color: #1a1a20;
+      color: var(--text);
     }
     .stat-value {
-      color: #1a1a20;
+      color: var(--text);
     }
   }
 </style>
 </head>
 <body>
-<div class="grain"></div>
 
 <header class="site-header">
   <a href="../index.html" class="site-title">Deeprecursion</a>
@@ -902,7 +901,7 @@ LOOM_LAB_MODEL=claude-opus-4-6
         <span class="calc-result-value" id="calcPrimeGen">$0.50</span>
       </div>
       <div class="calc-result-row" style="border-top: 2px solid var(--border); padding-top: 0.75rem; margin-top: 0.25rem;">
-        <span class="calc-result-label" style="font-weight: 600; color: #eeeef4;">Total run cost</span>
+        <span class="calc-result-label" style="font-weight: 600; color: var(--text);">Total run cost</span>
         <span class="calc-result-value" id="calcTotal" style="font-size: 1.3rem; color: var(--green);">$10.00</span>
       </div>
       <div class="calc-result-row">
@@ -924,7 +923,7 @@ LOOM_LAB_MODEL=claude-opus-4-6
 
   <p>Self-modification isn't a feature you ship. It's a capability you earn by running the loop until the loop survives.</p>
 
-  <p style="margin-top: 2rem; font-size: 1.1rem; color: #eeeef4;">Gen-72 was 56 seconds. Getting there took five days.</p>
+  <p style="margin-top: 2rem; font-size: 1.1rem; color: var(--text);">Gen-72 was 56 seconds. Getting there took five days.</p>
 
   <hr class="divider">
 

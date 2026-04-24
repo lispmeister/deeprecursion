@@ -34,7 +34,7 @@
   }
 
   strong {
-    color: #eeeef4;
+    color: var(--text);
   }
 
   ul {
@@ -148,7 +148,7 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #eeeef4;
+    color: var(--text);
   }
 
   .gp-desc {
@@ -242,7 +242,7 @@
 
   .phase-title {
     font-weight: 600;
-    color: #eeeef4;
+    color: var(--text);
     font-size: 0.95rem;
     margin-bottom: 0.5rem;
   }
@@ -280,7 +280,7 @@
   }
 
   .sim-control .sim-val {
-    color: #eeeef4;
+    color: var(--text);
     font-weight: 600;
   }
 
@@ -352,7 +352,7 @@
   }
 
   .sim-stats strong {
-    color: #eeeef4;
+    color: var(--text);
   }
 
   .tech-table {
@@ -397,16 +397,15 @@
 
   @media (prefers-color-scheme: light) {
     strong, .gp-title, .phase-title {
-      color: #2a2a32;
+      color: var(--text);
     }
     .sim-stats strong {
-      color: #1a1a20;
+      color: var(--text);
     }
   }
 </style>
 </head>
 <body>
-<div class="grain"></div>
 
 <header class="site-header">
   <a href="../index.html" class="site-title">Deeprecursion</a>
@@ -546,7 +545,7 @@
 
   <p>How long does a lineage survive? Adjust the parameters below. <strong>Income per gen</strong> represents what an agent earns from prediction markets or other sources each generation. When income exceeds costs, the budget grows. When it doesn't, extinction follows.</p>
 
-  <p>Each dot is an organism. <span style="color: var(--green);">Green</span> = economically viable. <span style="color: #e05a6f;">Red</span> = bankrupt. When the budget hits zero, no more offspring can be born.</p>
+  <p>Each dot is an organism. <span style="color: var(--green);">Green</span> = economically viable. <span style="color: var(--red);">Red</span> = bankrupt. When the budget hits zero, no more offspring can be born.</p>
 
   <div class="sim-container">
     <div class="sim-controls" style="grid-template-columns: 1fr 1fr;">
