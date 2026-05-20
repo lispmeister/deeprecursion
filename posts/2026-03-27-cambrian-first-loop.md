@@ -115,6 +115,8 @@ Phase 2 — economic viability, prediction markets, paying the bills — is stil
 
 ---
 
+*CAMBRIAN repository: [github.com/lispmeister/cambrian](https://github.com/lispmeister/cambrian).*
+
 *Previous: [CAMBRIAN: What If the Spec Is the Organism?](2026-03-18-cambrian.md)*
 
 *Next: [CAMBRIAN: It Reproduces](2026-03-29-cambrian-reproduces.md)*

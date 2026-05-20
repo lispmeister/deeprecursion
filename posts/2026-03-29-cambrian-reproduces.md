@@ -87,6 +87,8 @@ The honest caveat: reproduction is a solved problem. Evolution is harder. Select
 
 ---
 
+*CAMBRIAN repository: [github.com/lispmeister/cambrian](https://github.com/lispmeister/cambrian).*
+
 *Continue reading: [CAMBRIAN: The Baldwin Effect](2026-04-15-cambrian-baldwin.md)*
 
 *Previous: [CAMBRIAN: The Loop Closes](2026-03-27-cambrian-first-loop.md)*

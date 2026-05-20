@@ -138,4 +138,6 @@ The honest status: reproduction works reliably. Ordered fitness across viable or
 
 ---
 
+*CAMBRIAN repository: [github.com/lispmeister/cambrian](https://github.com/lispmeister/cambrian).*
+
 *Previous: [CAMBRIAN: It Reproduces](2026-03-29-cambrian-reproduces.md)*

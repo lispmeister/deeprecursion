@@ -136,3 +136,5 @@ Who authorized this? What policy allowed it? What input was fresh enough? What c
 Eigenforge is an attempt to make those answers concrete.
 
 Not a smart home demo. Not an agent framework. A control fabric where intelligence can participate without being trusted blindly.
+
+The Eigenforge repository is here: [github.com/lispmeister/eigenforge](https://github.com/lispmeister/eigenforge).

@@ -137,6 +137,8 @@ Eigenforge is an attempt to make those answers concrete.
 
 Not a smart home demo. Not an agent framework. A control fabric where intelligence can participate without being trusted blindly.
 
+The Eigenforge repository is here: [github.com/lispmeister/eigenforge](https://github.com/lispmeister/eigenforge).
+
 
 ---
 
@@ -416,6 +418,8 @@ The honest status: reproduction works reliably. Ordered fitness across viable or
 
 ---
 
+*CAMBRIAN repository: [github.com/lispmeister/cambrian](https://github.com/lispmeister/cambrian).*
+
 *Previous: [CAMBRIAN: It Reproduces](2026-03-29-cambrian-reproduces.md)*
 
 
@@ -510,6 +514,8 @@ The research work is done: we studied A-Evolve (Amazon's agent evolution framewo
 The honest caveat: reproduction is a solved problem. Evolution is harder. Selection pressure can optimize for the wrong things. Fitness functions can be gamed. Self-referential fitness — where the organism evolves to game its own fitness measure — is a real risk, not a theoretical one. The next post will have more to say about that when the first M2 campaign runs.
 
 ---
+
+*CAMBRIAN repository: [github.com/lispmeister/cambrian](https://github.com/lispmeister/cambrian).*
 
 *Continue reading: [CAMBRIAN: The Baldwin Effect](2026-04-15-cambrian-baldwin.md)*
 
@@ -635,6 +641,8 @@ The good news: the first obstacle (getting the loop to run at all) is cleared. T
 Phase 2 — economic viability, prediction markets, paying the bills — is still the goal. We just have more respect now for how much "reliable self-reproduction" actually entails.
 
 ---
+
+*CAMBRIAN repository: [github.com/lispmeister/cambrian](https://github.com/lispmeister/cambrian).*
 
 *Previous: [CAMBRIAN: What If the Spec Is the Organism?](2026-03-18-cambrian.md)*
 
@@ -821,6 +829,8 @@ The individual dies. The spec survives. The lineage continues — but only if it
 ---
 
 *The CAMBRIAN-SPEC-001 is [on GitHub](https://github.com/lispmeister/loom/blob/master/CAMBRIAN-SPEC-001.md). The architecture review that shaped this post is in `architecture-reviews/review-2026-03-18-001.md`. The Loom pipeline that started all of this is still running.*
+
+*CAMBRIAN repository: [github.com/lispmeister/cambrian](https://github.com/lispmeister/cambrian).*
 
 *Previous: [It Rewrote Itself](2026-03-17-it-rewrote-itself.md) — Loom's first autonomous self-modification.*
 
