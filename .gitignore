@@ -3,6 +3,8 @@ tmp/
 
 # Claude Code
 .claude/
+CLAUDE.md
+AGENTS.md
 
 # macOS
 .DS_Store

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigenforge: Control Fabric for AI-Era Infrastructure &mdash; Deeprecursion</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="2026-05-20-eigenforge.md">
+<style>
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  strong { color: var(--text); }
+
+  ul, ol { padding-left: 1.25rem; }
+  li { margin-bottom: 0.45rem; }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    margin: 1.5rem 0;
+  }
+
+  .architecture {
+    margin: 2rem 0;
+    padding: 1.25rem;
+    border-left: 2px solid var(--accent);
+  }
+
+  .arch-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .arch-node {
+    min-height: 5.6rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .arch-node strong {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+  }
+
+  .arch-node span {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.66rem;
+    color: var(--text-dim);
+    line-height: 1.35;
+  }
+
+  .arch-arrow {
+    font-family: 'Inter', sans-serif;
+    color: var(--accent);
+    font-size: 0.7rem;
+    margin: 0.7rem 0;
+    text-align: center;
+  }
+
+  .loop-widget {
+    margin: 2rem 0;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1.25rem;
+  }
+
+  .widget-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.8rem;
+  }
+
+  .scenario-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .scenario-tab {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.48rem 0.7rem;
+    cursor: pointer;
+  }
+
+  .scenario-tab:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .scenario-tab.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .loop-grid {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 1rem;
+  }
+
+  .loop-steps {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .loop-step {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    padding: 0.7rem;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .loop-step.active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .loop-step strong {
+    display: block;
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .loop-step span {
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    line-height: 1.35;
+  }
+
+  .ledger-panel {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    padding: 0.9rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    min-height: 18rem;
+  }
+
+  .ledger-panel .ok { color: var(--green); }
+  .ledger-panel .warn { color: var(--amber); }
+  .ledger-panel .deny { color: var(--red); }
+  .ledger-panel .dim { color: var(--text-dim); }
+  .ledger-panel .accent { color: var(--accent); }
+
+  @media (max-width: 720px) {
+    .arch-row, .loop-grid { grid-template-columns: 1fr; }
+    .arch-arrow { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="../index.html" class="site-title">Deeprecursion</a>
+  <nav class="site-nav">
+    <a href="../index.html">Research</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+<hr class="site-divider">
+
+<main class="page">
+  <h1>Eigenforge: Control Fabric for AI-Era Infrastructure</h1>
+  <p class="meta">Agent Architecture &middot; May 20, 2026</p>
+
+  <div class="abstract">AI agents are getting good enough to participate in real operations. That does not mean they should get root access to the world.</div>
+
+  <p>Eigenforge is an experiment in the opposite direction: a reflective control layer where AI cognition can help operate infrastructure, but only through explicit contracts, signed authority, durable records, adapters, policy checks, and eventually quorum.</p>
+
+  <p>The first prototype controls one boring thing: a fan.</p>
+
+  <p>If CO2 rises above 1000 ppm, propose fan on. If CO2 falls below 500 ppm, propose fan off. If the sensor is stale, do nothing physical and record a signed alert.</p>
+
+  <p>That sounds small. It is deliberately small. The point is not the fan. The point is the shape of the authority boundary.</p>
+
+  <hr class="divider">
+
+  <h2>The Motivation</h2>
+
+  <p>Most agent demos skip the part where the agent touches the real world.</p>
+
+  <p>They show planning, tool calls, browser automation, code edits, maybe a dashboard. But infrastructure work has a different failure model. A bad action is not just an incorrect answer. It can move an actuator, exhaust a resource, corrupt a record, or mask a fault.</p>
+
+  <p>So the question is not:</p>
+
+  <div class="abstract">Can an AI decide what should happen?</div>
+
+  <p>The question is:</p>
+
+  <div class="abstract">Can an AI participate in a control loop without becoming the authority?</div>
+
+  <p>Eigenforge treats that as the core design constraint.</p>
+
+  <hr class="divider">
+
+  <h2>The Shape of V1</h2>
+
+  <p>V1 is an Elixir/OTP umbrella with five boundaries:</p>
+
+  <div class="architecture" aria-label="Eigenforge architecture">
+    <div class="arch-row">
+      <div class="arch-node"><strong>Simulator / HA</strong><span>sensor ingest and device adapter</span></div>
+      <div class="arch-node"><strong>Mailbox</strong><span>routing, delivery, receipts</span></div>
+      <div class="arch-node"><strong>Core</strong><span>OODA, policy, capabilities</span></div>
+      <div class="arch-node"><strong>Ledger</strong><span>signed, hash-chained events</span></div>
+      <div class="arch-node"><strong>Dashboard</strong><span>read-only LiveView projections</span></div>
+    </div>
+    <div class="arch-arrow">sensor snapshot &rarr; decision boundary &rarr; signed command envelope &rarr; durable evidence &rarr; read-only view</div>
+  </div>
+
+  <p>The core does not directly twiddle devices. IO adapters do not decide policy. The dashboard does not write. The mailbox routes and records. The ledger is append-only. Each component is intentionally less powerful than it could be.</p>
+
+  <p>That is the architecture in one sentence: make every boundary boring enough to audit.</p>
+
+  <hr class="divider">
+
+  <h2>The Control Loop</h2>
+
+  <p>The runtime path is a small OODA loop:</p>
+
+  <ol>
+    <li><strong>Observe:</strong> normalize the sensor snapshot and check freshness.</li>
+    <li><strong>Orient:</strong> load signed device config and derive current room state.</li>
+    <li><strong>Decide:</strong> propose an action, check policy, check capability grants.</li>
+    <li><strong>Act:</strong> append signed events, issue a signed command envelope, observe the result.</li>
+  </ol>
+
+  <div class="loop-widget">
+    <div class="widget-label">Control-loop trace</div>
+    <div class="scenario-tabs" role="tablist">
+      <button class="scenario-tab active" data-scenario="fresh">Fresh CO2 high</button>
+      <button class="scenario-tab" data-scenario="stale">Stale CO2</button>
+      <button class="scenario-tab" data-scenario="already">Already on</button>
+    </div>
+    <div class="loop-grid">
+      <div class="loop-steps" id="loopSteps"></div>
+      <div class="ledger-panel" id="ledgerPanel"></div>
+    </div>
+  </div>
+
+  <p>In V1, the &ldquo;AI&rdquo; part is still a deterministic rule stub. That is intentional. The project is building the control fabric before trusting cognition inside it.</p>
+
+  <p>Later, an AI reasoner can replace the rule stub. The surrounding authority model should not have to change.</p>
+
+  <hr class="divider">
+
+  <h2>What Gets Recorded</h2>
+
+  <p>Eigenforge treats the durable record as part of the control system, not as observability garnish.</p>
+
+  <p>Each core node owns a local SQLite decision/action ledger. Events are signed with HMAC-SHA256, hash-chained, append-only, projected into mutable read models for the dashboard, and verified before new control work begins.</p>
+
+  <p>A stale CO2 reading is not just ignored. It becomes evidence:</p>
+
+  <pre>sensor snapshot
+  -&gt; reasoner outcome recorded
+  -&gt; policy decision recorded
+  -&gt; stale snapshot denied
+  -&gt; no actuator command</pre>
+
+  <p>That distinction matters. &ldquo;Nothing happened&rdquo; is not enough. The system needs to know that nothing happened because policy denied action on stale input.</p>
+
+  <hr class="divider">
+
+  <h2>Why Elixir/OTP</h2>
+
+  <p>This kind of system wants boring concurrency: supervised processes, explicit message flow, fault isolation, restart behavior, and components that can crash without turning every failure into global ambiguity.</p>
+
+  <p>Elixir/OTP is a good fit because Eigenforge is not primarily a model-serving problem. It is a control-boundary problem.</p>
+
+  <p>The interesting work is not &ldquo;call an LLM.&rdquo; It is what counts as authority, what must be signed, what gets persisted, what can be replayed, what survives restart, and what evidence is needed before touching the physical world.</p>
+
+  <p>OTP gives the runtime vocabulary for that.</p>
+
+  <hr class="divider">
+
+  <h2>The Long Vision</h2>
+
+  <p>V1 is a one-core prototype. The direction is multi-core quorum.</p>
+
+  <p>Instead of one local decision ledger authorizing an action, future versions can require a quorum certificate: multiple cores observe, decide, sign, compare, and only then allow IO to execute.</p>
+
+  <pre>snapshot -&gt; Core A --\
+snapshot -&gt; Core B ----&gt; quorum certificate -&gt; command
+snapshot -&gt; Core C --/</pre>
+
+  <p>That is the larger bet: AI-operated infrastructure should look less like an omnipotent assistant and more like a control fabric with inspectable cognition inside bounded authority.</p>
+
+  <hr class="divider">
+
+  <h2>The Principle</h2>
+
+  <p>Eigenforge starts with a fan because the smallest actuator is enough to expose the real problem.</p>
+
+  <p>If an agent can affect the world, then the system around it needs answers to hard questions:</p>
+
+  <p>Who authorized this? What policy allowed it? What input was fresh enough? What command was issued? What happened afterward? Can we prove the record was not rewritten? Can the dashboard observe without becoming authority?</p>
+
+  <p>Eigenforge is an attempt to make those answers concrete.</p>
+
+  <p>Not a smart home demo. Not an agent framework. A control fabric where intelligence can participate without being trusted blindly.</p>
+</main>
+
+<footer class="site-footer">
+  Deeprecursion &middot; Markus Fix &middot; 2026
+</footer>
+
+<script>
+(function() {
+  var scenarios = {
+    fresh: {
+      active: 3,
+      steps: [
+        ['Observe', 'CO2 = 1200 ppm, sensor fresh'],
+        ['Orient', 'fan state = off, room config verified'],
+        ['Decide', 'policy allows action; grant permits fan command'],
+        ['Act', 'append decision, issue command, record after-action']
+      ],
+      ledger: [
+        ['accent', 'snapshot_received        co2=1200 fresh'],
+        ['accent', 'reasoner_outcome_recorded propose fan:on'],
+        ['ok', 'policy_decision_recorded allow'],
+        ['ok', 'capability_decision_recorded allow'],
+        ['ok', 'command_envelope_issued fan:on'],
+        ['ok', 'after_action_recorded confirmed_changed']
+      ]
+    },
+    stale: {
+      active: 2,
+      steps: [
+        ['Observe', 'CO2 = 1200 ppm, sensor stale'],
+        ['Orient', 'snapshot cannot authorize physical action'],
+        ['Decide', 'policy denies stale input'],
+        ['Act', 'record denial; issue no command']
+      ],
+      ledger: [
+        ['accent', 'snapshot_received        co2=1200 stale'],
+        ['accent', 'reasoner_outcome_recorded propose fan:on'],
+        ['warn', 'policy_decision_recorded deny_stale_snapshot'],
+        ['deny', 'stale_snapshot_denied no command'],
+        ['dim', 'command_envelope_issued skipped']
+      ]
+    },
+    already: {
+      active: 3,
+      steps: [
+        ['Observe', 'CO2 = 1200 ppm, sensor fresh'],
+        ['Orient', 'fan state = on already'],
+        ['Decide', 'reasoner suppresses duplicate command'],
+        ['Act', 'record no-op outcome']
+      ],
+      ledger: [
+        ['accent', 'snapshot_received        co2=1200 fresh'],
+        ['accent', 'reasoner_outcome_recorded no_action'],
+        ['ok', 'policy_decision_recorded allow_noop'],
+        ['ok', 'after_action_recorded confirmed_already_in_state'],
+        ['dim', 'command_envelope_issued skipped']
+      ]
+    }
+  };
+
+  var stepBox = document.getElementById('loopSteps');
+  var panel = document.getElementById('ledgerPanel');
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.scenario-tab'));
+
+  function clear(node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function render(name) {
+    var data = scenarios[name];
+    clear(stepBox);
+    clear(panel);
+
+    data.steps.forEach(function(step, index) {
+      var card = document.createElement('div');
+      card.className = 'loop-step' + (index === data.active ? ' active' : '');
+      var title = document.createElement('strong');
+      var body = document.createElement('span');
+      title.textContent = step[0];
+      body.textContent = step[1];
+      card.appendChild(title);
+      card.appendChild(body);
+      stepBox.appendChild(card);
+    });
+
+    data.ledger.forEach(function(row) {
+      var line = document.createElement('div');
+      line.className = row[0];
+      line.textContent = row[1];
+      panel.appendChild(line);
+    });
+
+    tabs.forEach(function(tab) {
+      tab.classList.toggle('active', tab.dataset.scenario === name);
+    });
+  }
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      render(tab.dataset.scenario);
+    });
+  });
+
+  render('fresh');
+})();
+</script>
+</body>
+</html>
